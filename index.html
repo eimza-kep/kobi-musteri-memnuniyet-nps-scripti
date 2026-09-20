@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Müşteri Memnuniyeti ve NPS Değerlendirme Portalı</title>
+    <style>
+        :root {
+            --primary: #8b5cf6;
+            --primary-hover: #7c3aed;
+            --secondary: #0f172a;
+            --bg: #f8fafc;
+            --card: #ffffff;
+            --border: #e2e8f0;
+            --text-main: #1e293b;
+            --text-muted: #64748b;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
+        body { background: var(--bg); color: var(--text-main); line-height: 1.5; padding: 32px 16px; min-height: 100vh; }
+        .container { max-width: 840px; margin: 0 auto; }
+
+        .header {
+            text-align: center; margin-bottom: 24px; background: white; padding: 30px 20px;
+            border-radius: 12px; border: 1px solid var(--border); box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+            position: relative; overflow: hidden;
+        }
+        .header::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 4px; background: var(--primary); }
+        .header-badge {
+            display: inline-block; background: #ede9fe; color: var(--primary);
+            font-size: 0.78rem; font-weight: 700; padding: 4px 12px; border-radius: 999px; margin-bottom: 10px;
+        }
+        .header h1 { font-size: 1.6rem; color: var(--secondary); margin-bottom: 8px; font-weight: 800; }
+        .header p { font-size: 0.9rem; color: var(--text-muted); max-width: 680px; margin: 0 auto; }
+
+        .card {
+            background: var(--card); border: 1px solid var(--border); border-radius: 12px;
+            padding: 26px; margin-bottom: 24px; box-shadow: 0 1px 3px rgba(0,0,0,0.03);
+        }
+        .card-title {
+            font-size: 1.05rem; font-weight: 700; color: var(--secondary); margin-bottom: 18px;
+            display: flex; align-items: center; gap: 8px; border-bottom: 2px solid #f1f5f9; padding-bottom: 8px;
+        }
+
+        .nps-selector {
+            display: flex; justify-content: space-between; gap: 6px; margin: 16px 0 8px; flex-wrap: wrap;
+        }
+        .nps-btn {
+            flex: 1; min-width: 44px; height: 48px; border: 2px solid var(--border); border-radius: 8px;
+            background: white; font-weight: 800; font-size: 1.1rem; color: var(--text-main); cursor: pointer;
+            transition: all 0.15s; display: flex; align-items: center; justify-content: center;
+        }
+        .nps-btn:hover { border-color: var(--primary); background: #f5f3ff; color: var(--primary); }
+        .nps-btn.selected { background: var(--primary); color: white; border-color: var(--primary); }
+
+        .rating-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 14px; }
+        .rating-item { background: #f8fafc; padding: 12px 16px; border-radius: 8px; border: 1px solid var(--border); }
+        .rating-item select { margin-top: 6px; }
+
+        .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+        .form-group { display: flex; flex-direction: column; gap: 6px; }
+        .form-group.full { grid-column: span 2; }
+        label { font-size: 0.83rem; font-weight: 600; color: #334155; }
+        label span.req { color: #dc2626; }
+
+        input, select, textarea {
+            width: 100%; padding: 10px 14px; border: 1px solid var(--border); border-radius: 8px;
+            font-size: 0.88rem; outline: none; background: #f8fafc; color: var(--text-main);
+        }
+        input:focus, select:focus, textarea:focus { border-color: var(--primary); background: white; box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1); }
+        textarea { min-height: 85px; resize: vertical; }
+
+        .btn-submit {
+            width: 100%; background: var(--primary); color: white; border: none; padding: 14px;
+            border-radius: 8px; font-weight: 700; font-size: 1rem; cursor: pointer; transition: all 0.2s;
+        }
+        .btn-submit:hover { background: var(--primary-hover); }
+
+        .result-box {
+            display: none; background: white; border: 2px solid #ddd6fe; border-radius: 12px;
+            padding: 32px 24px; box-shadow: 0 10px 25px -5px rgba(0,0,0,0.05); text-align: center;
+        }
+
+        @media (max-width: 640px) {
+            .form-grid, .rating-grid { grid-template-columns: 1fr; }
+            .form-group.full { grid-column: span 1; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="header">
+        <div class="header-badge">MÜŞTERİ DENEYİMİ (CX) PORTALI</div>
+        <h1>Müşteri Memnuniyeti ve NPS Anketi</h1>
+        <p>Görüşleriniz hizmet kalitemizi mükemmelleştirmek adına son derece değerlidir. Lütfen deneyiminizi bizimle paylaşınız.</p>
+    </div>
+
+    <form id="npsForm" onsubmit="handleNpsSubmit(event)">
+        <!-- 1. NPS Puanı -->
+        <div class="card">
+            <h2 class="card-title">⭐ 1. Net Tavsiye Skoru (NPS)</h2>
+            <p style="font-size: 0.9rem; color: #475569;">
+                <b>Şirketimizi / hizmetimizi bir iş ortağınıza veya tanıdığınıza tavsiye etme olasılığınız nedir?</b> (0: Kesinlikle Tavsiye Etmem - 10: Kesinlikle Tavsiye Ederim)
+            </p>
+
+            <div class="nps-selector" id="npsButtons">
+                <!-- 0 to 10 -->
+                <button type="button" class="nps-btn" onclick="selectNps(0)">0</button>
+                <button type="button" class="nps-btn" onclick="selectNps(1)">1</button>
+                <button type="button" class="nps-btn" onclick="selectNps(2)">2</button>
+                <button type="button" class="nps-btn" onclick="selectNps(3)">3</button>
+                <button type="button" class="nps-btn" onclick="selectNps(4)">4</button>
+                <button type="button" class="nps-btn" onclick="selectNps(5)">5</button>
+                <button type="button" class="nps-btn" onclick="selectNps(6)">6</button>
+                <button type="button" class="nps-btn" onclick="selectNps(7)">7</button>
+                <button type="button" class="nps-btn" onclick="selectNps(8)">8</button>
+                <button type="button" class="nps-btn" onclick="selectNps(9)">9</button>
+                <button type="button" class="nps-btn" onclick="selectNps(10)">10</button>
+            </div>
+            <div style="display: flex; justify-content: space-between; font-size: 0.75rem; color: var(--text-muted); font-weight: 600;">
+                <span>0 - Asla Tavsiye Etmem</span>
+                <span>10 - Kesinlikle Tavsiye Ederim</span>
+            </div>
+            <input type="hidden" id="npsScore" required value="">
+        </div>
+
+        <!-- 2. Kategori Bazlı Puanlama -->
+        <div class="card">
+            <h2 class="card-title">📊 2. Kategori Değerlendirmeleri</h2>
+            <div class="rating-grid">
+                <div class="rating-item">
+                    <label>Ürün / Hizmet Kalitesi <span class="req">*</span></label>
+                    <select id="rateProduct" required>
+                        <option value="5">⭐⭐⭐⭐⭐ 5 - Mükemmel</option>
+                        <option value="4">⭐⭐⭐⭐ 4 - İyi</option>
+                        <option value="3">⭐⭐⭐ 3 - Orta / Yeterli</option>
+                        <option value="2">⭐⭐ 2 - Geliştirilmeli</option>
+                        <option value="1">⭐ 1 - Yetersiz / Kötü</option>
+                    </select>
+                </div>
+                <div class="rating-item">
+                    <label>Müşteri Temsilcisi & İletişim <span class="req">*</span></label>
+                    <select id="rateSupport" required>
+                        <option value="5">⭐⭐⭐⭐⭐ 5 - Çok Hızlı & İlgili</option>
+                        <option value="4">⭐⭐⭐⭐ 4 - İyi</option>
+                        <option value="3">⭐⭐⭐ 3 - Orta</option>
+                        <option value="2">⭐⭐ 2 - Geç Yanıt</option>
+                        <option value="1">⭐ 1 - İlgisiz / Ulaşılamadı</option>
+                    </select>
+                </div>
+                <div class="rating-item">
+                    <label>Teslimat & Süreç Hızı <span class="req">*</span></label>
+                    <select id="rateSpeed" required>
+                        <option value="5">⭐⭐⭐⭐⭐ 5 - Çok Hızlı</option>
+                        <option value="4">⭐⭐⭐⭐ 4 - Zamanında</option>
+                        <option value="3">⭐⭐⭐ 3 - Kabul Edilebilir</option>
+                        <option value="2">⭐⭐ 2 - Gecikmeli</option>
+                        <option value="1">⭐ 1 - Çok Gecikti</option>
+                    </select>
+                </div>
+                <div class="rating-item">
+                    <label>Fiyat / Değer Dengesi <span class="req">*</span></label>
+                    <select id="rateValue" required>
+                        <option value="5">⭐⭐⭐⭐⭐ 5 - Değerinin Üzerinde</option>
+                        <option value="4">⭐⭐⭐⭐ 4 - Makul / Dengeli</option>
+                        <option value="3">⭐⭐⭐ 3 - Normal</option>
+                        <option value="2">⭐⭐ 2 - Biraz Pahalı</option>
+                        <option value="1">⭐ 1 - Fahiş / Değmez</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <!-- 3. Geri Bildirim & İletişim Bilgileri -->
+        <div class="card">
+            <h2 class="card-title">💬 3. Görüşleriniz ve İletişim Tercihiniz</h2>
+            <div class="form-grid">
+                <div class="form-group full">
+                    <label>Görüşünüz, Öneriniz veya Yaşadığınız Problem <span class="req">*</span></label>
+                    <textarea id="feedbackText" required placeholder="Neyi çok iyi yaptık? Hangi konuda kendimizi geliştirmeliyiz? Detaylıca belirtiniz..."></textarea>
+                </div>
+                <div class="form-group">
+                    <label>Bizimle Paylaşmak İstediğiniz Ad Soyad</label>
+                    <input type="text" id="customerName" placeholder="Adınız Soyadınız (İsteğe bağlı)">
+                </div>
+                <div class="form-group">
+                    <label>İletişim Telefonu / E-Posta</label>
+                    <input type="text" id="customerContact" placeholder="05XX... veya ornek@mail.com">
+                </div>
+                <div class="form-group">
+                    <label>Sipariş No / Müşteri Kodu (Varsa)</label>
+                    <input type="text" id="orderRef" placeholder="Örn: SIP-10293">
+                </div>
+                <div class="form-group">
+                    <label>Yetkili Bir Temsilcimiz Sizi Arasın Mı?</label>
+                    <select id="callbackRequested">
+                        <option value="Hayır, sadece bilgi amaçlı ilettim">Hayır, sadece değerlendirme amaçlı</option>
+                        <option value="Evet, lütfen sorunum için geri arayın">Evet, lütfen geri dönüş yapınız</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <button type="submit" class="btn-submit" id="submitBtn">
+            <span>🚀 Değerlendirmeyi Gönder</span>
+        </button>
+    </form>
+
+    <!-- Success Box -->
+    <div class="result-box" id="resultBox">
+        <div style="font-size: 3rem; margin-bottom: 12px;">🎉</div>
+        <h2 style="color: var(--secondary);">Geri Bildiriminiz İçin Çok Teşekkür Ederiz!</h2>
+        <p style="color: var(--text-muted); font-size: 0.92rem; margin-top: 6px; max-width: 500px; margin: 0 auto;">
+            Değerlendirmeniz müşteri deneyimi ekibimiz tarafından incelenecek ve talebiniz doğrultusunda aksiyon alınacaktır.
+        </p>
+        <div style="margin: 20px 0;">
+            <span style="font-size: 0.85rem; color: #64748b;">Geri Bildirim Takip Referansı:</span><br>
+            <div style="display:inline-block; background:#ede9fe; color:var(--primary); font-size:1.3rem; font-weight:800; padding:6px 18px; border-radius:8px; margin-top:6px;" id="trackingCodeDisplay">NPS-2026-0000</div>
+        </div>
+        <button class="btn-submit" style="width: auto; padding: 10px 24px; background: #e2e8f0; color: #334155; margin-top: 12px;" onclick="location.reload()">➕ Yeni Yanıt Gönder</button>
+    </div>
+</div>
+
+<script>
+let selectedNpsVal = null;
+
+function selectNps(score) {
+    selectedNpsVal = score;
+    document.getElementById('npsScore').value = score;
+    document.querySelectorAll('.nps-btn').forEach(btn => btn.classList.remove('selected'));
+    document.querySelectorAll('.nps-btn')[score].classList.add('selected');
+}
+
+async function handleNpsSubmit(e) {
+    e.preventDefault();
+    if (selectedNpsVal === null) {
+        alert('Lütfen 0 ile 10 arasında bir tavsiye skoru seçiniz.');
+        return;
+    }
+
+    const btn = document.getElementById('submitBtn');
+    btn.disabled = true;
+    btn.innerText = '⏳ İletiliyor...';
+
+    const payload = {
+        nps_score: selectedNpsVal,
+        rate_product: parseInt(document.getElementById('rateProduct').value) || 5,
+        rate_support: parseInt(document.getElementById('rateSupport').value) || 5,
+        rate_speed: parseInt(document.getElementById('rateSpeed').value) || 5,
+        rate_value: parseInt(document.getElementById('rateValue').value) || 5,
+        feedback_text: document.getElementById('feedbackText').value.trim(),
+        customer_name: document.getElementById('customerName').value.trim() || 'Anonim Müşteri',
+        customer_contact: document.getElementById('customerContact').value.trim(),
+        order_ref: document.getElementById('orderRef').value.trim(),
+        callback_requested: document.getElementById('callbackRequested').value,
+        status: (selectedNpsVal <= 6 || document.getElementById('callbackRequested').value.includes('Evet')) ? 'Acil İnceleme Bekliyor' : 'Kayıt Alındı',
+        created_at: new Date().toISOString()
+    };
+
+    let trackingCode = 'NPS-2026-' + Math.floor(1000 + Math.random() * 9000);
+
+    try {
+        const res = await fetch('/api/nps-gonder', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+        if (res.ok) {
+            const data = await res.json();
+            if (data.tracking_code) trackingCode = data.tracking_code;
+        }
+    } catch (err) {
+        const local = JSON.parse(localStorage.getItem('nps_bildirimler') || '[]');
+        payload.tracking_code = trackingCode;
+        local.push(payload);
+        localStorage.setItem('nps_bildirimler', JSON.stringify(local));
+    }
+
+    document.getElementById('npsForm').style.display = 'none';
+    document.getElementById('resultBox').style.display = 'block';
+    document.getElementById('trackingCodeDisplay').innerText = trackingCode;
+}
+</script>
+
+</body>
+</html>

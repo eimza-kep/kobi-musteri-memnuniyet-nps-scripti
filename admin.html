@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Müşteri Deneyimi ve NPS Yönetim Paneli</title>
+    <style>
+        :root {
+            --primary: #8b5cf6;
+            --primary-hover: #7c3aed;
+            --bg: #f8fafc;
+            --card: #ffffff;
+            --border: #e2e8f0;
+            --text-main: #1e293b;
+            --text-muted: #64748b;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
+        body { background: var(--bg); color: var(--text-main); line-height: 1.5; padding: 24px; }
+        .container { max-width: 1200px; margin: 0 auto; }
+        .navbar { display: flex; justify-content: space-between; align-items: center; background: white; padding: 18px 24px; border-radius: 12px; border: 1px solid var(--border); margin-bottom: 24px; box-shadow: 0 1px 3px rgba(0,0,0,0.03); }
+        .navbar h1 { font-size: 1.3rem; font-weight: 800; color: #0f172a; display: flex; align-items: center; gap: 8px; }
+        .nav-actions { display: flex; gap: 10px; }
+        .btn { padding: 8px 16px; border-radius: 6px; font-size: 0.85rem; font-weight: 600; cursor: pointer; border: 1px solid var(--border); background: white; color: var(--text-main); transition: 0.2s; text-decoration: none; display: inline-flex; align-items: center; gap: 6px; }
+        .btn-primary { background: var(--primary); color: white; border-color: var(--primary); }
+        .btn-primary:hover { background: var(--primary-hover); }
+
+        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 24px; }
+        .stat-card { background: white; padding: 18px; border-radius: 10px; border: 1px solid var(--border); }
+        .stat-label { font-size: 0.8rem; color: var(--text-muted); font-weight: 600; text-transform: uppercase; }
+        .stat-val { font-size: 1.8rem; font-weight: 800; color: #0f172a; margin-top: 4px; }
+
+        .filter-bar { background: white; padding: 16px 20px; border-radius: 10px; border: 1px solid var(--border); margin-bottom: 20px; display: flex; gap: 12px; flex-wrap: wrap; }
+        .filter-bar input, .filter-bar select { padding: 8px 12px; border: 1px solid var(--border); border-radius: 6px; font-size: 0.85rem; outline: none; }
+        .filter-bar input { flex: 1; min-width: 200px; }
+
+        .table-container { background: white; border-radius: 10px; border: 1px solid var(--border); overflow-x: auto; box-shadow: 0 1px 3px rgba(0,0,0,0.02); }
+        table { width: 100%; border-collapse: collapse; text-align: left; font-size: 0.88rem; }
+        th { background: #f8fafc; padding: 12px 16px; font-weight: 700; color: #475569; border-bottom: 1px solid var(--border); white-space: nowrap; }
+        td { padding: 12px 16px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+        tr:hover { background: #f1f5f9; }
+
+        .badge { display: inline-block; padding: 4px 10px; border-radius: 999px; font-size: 0.75rem; font-weight: 700; }
+        .badge-promoter { background: #dcfce7; color: #15803d; }
+        .badge-passive { background: #fef3c7; color: #b45309; }
+        .badge-detractor { background: #fee2e2; color: #b91c1c; }
+
+        .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); align-items: center; justify-content: center; padding: 20px; z-index: 50; }
+        .modal-card { background: white; width: 100%; max-width: 650px; border-radius: 12px; padding: 24px; max-height: 90vh; overflow-y: auto; }
+        .modal-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); padding-bottom: 12px; margin-bottom: 16px; }
+        .detail-row { display: flex; margin-bottom: 10px; font-size: 0.88rem; }
+        .detail-lbl { width: 160px; font-weight: 600; color: var(--text-muted); }
+        .detail-val { flex: 1; color: var(--text-main); }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="navbar">
+        <h1>⭐ Müşteri Deneyimi & NPS Analitik Paneli</h1>
+        <div class="nav-actions">
+            <a href="/" class="btn" target="_blank">🌐 Anket Formu</a>
+            <button class="btn btn-primary" onclick="exportCSV()">📥 CSV Dışa Aktar</button>
+            <button class="btn" onclick="fetchData()">🔄 Yenile</button>
+        </div>
+    </div>
+
+    <div class="stats-grid">
+        <div class="stat-card" style="border-left: 4px solid var(--primary);">
+            <div class="stat-label">Net Promoter Score (NPS)</div>
+            <div class="stat-val" id="statNps" style="color: var(--primary);">0</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-label">Toplam Yanıt</div>
+            <div class="stat-val" id="statTotal">0</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-label">Tavsiye Edenler (9-10)</div>
+            <div class="stat-val" id="statPromoters" style="color: #15803d;">0</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-label">Kötüleyenler (0-6 / Risk)</div>
+            <div class="stat-val" id="statDetractors" style="color: #dc2626;">0</div>
+        </div>
+    </div>
+
+    <div class="filter-bar">
+        <input type="text" id="searchInput" placeholder="İsim, İletişim, Sipariş No veya Görüş ara..." oninput="filterData()">
+        <select id="filterTier" onchange="filterData()">
+            <option value="">Tüm Segmentler</option>
+            <option value="promoter">Tavsiye Edenler (9-10)</option>
+            <option value="passive">Pasifler (7-8)</option>
+            <option value="detractor">Kötüleyenler / Risk (0-6)</option>
+        </select>
+        <select id="filterCallback" onchange="filterData()">
+            <option value="">Geri Arama Tercihi (Tümü)</option>
+            <option value="Evet">Evet, Geri Dönüş İsteyenler</option>
+            <option value="Hayır">Hayır, İstemeyenler</option>
+        </select>
+        <select id="filterStatus" onchange="filterData()">
+            <option value="">Tüm Durumlar</option>
+            <option value="Kayıt Alındı">Kayıt Alındı</option>
+            <option value="Acil İnceleme Bekliyor">Acil İnceleme Bekliyor</option>
+            <option value="Müşteri ile Görüşüldü">Müşteri ile Görüşüldü</option>
+            <option value="Memnuniyet Sağlandı">Memnuniyet Sağlandı</option>
+        </select>
+    </div>
+
+    <div class="table-container">
+        <table>
+            <thead>
+                <tr>
+                    <th>Takip No</th>
+                    <th>Müşteri</th>
+                    <th>NPS Skoru</th>
+                    <th>Segment</th>
+                    <th>Görüş Özeti</th>
+                    <th>Geri Arama?</th>
+                    <th>Tarih</th>
+                    <th>Durum</th>
+                    <th>İşlem</th>
+                </tr>
+            </thead>
+            <tbody id="tableBody">
+                <tr><td colspan="9" style="text-align:center; padding: 24px; color: var(--text-muted);">Yükleniyor...</td></tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Modal -->
+<div class="modal" id="detailModal">
+    <div class="modal-card">
+        <div class="modal-header">
+            <h3 id="modalTitle">Geri Bildirim Detayı</h3>
+            <button onclick="closeModal()" style="border:none; background:none; font-size: 1.2rem; cursor:pointer;">✖</button>
+        </div>
+        <div id="modalBody"></div>
+        <div style="margin-top: 20px; display: flex; justify-content: space-between; align-items: center; border-top: 1px solid var(--border); padding-top: 14px;">
+            <div style="display: flex; gap: 8px; align-items: center;">
+                <label style="font-size: 0.85rem; font-weight: 600;">Durum:</label>
+                <select id="changeStatusSelect" style="padding: 6px 10px; border-radius: 6px; border: 1px solid var(--border); font-size: 0.85rem;">
+                    <option value="Kayıt Alındı">Kayıt Alındı</option>
+                    <option value="Acil İnceleme Bekliyor">Acil İnceleme Bekliyor</option>
+                    <option value="Müşteri ile Görüşüldü">Müşteri ile Görüşüldü</option>
+                    <option value="Memnuniyet Sağlandı">Memnuniyet Sağlandı</option>
+                </select>
+                <button class="btn btn-primary" onclick="updateCurrentStatus()">Kaydet</button>
+            </div>
+            <button class="btn" onclick="window.print()">🖨️ Yazdır</button>
+        </div>
+    </div>
+</div>
+
+<script>
+let allData = [];
+let activeItem = null;
+
+async function fetchData() {
+    try {
+        const res = await fetch('/api/nps-listesi');
+        if (res.ok) {
+            allData = await res.json();
+        } else {
+            fallbackLocal();
+        }
+    } catch (e) {
+        fallbackLocal();
+    }
+    render();
+}
+
+function fallbackLocal() {
+    allData = JSON.parse(localStorage.getItem('nps_bildirimler') || '[]');
+}
+
+function render() {
+    const q = document.getElementById('searchInput').value.toLowerCase();
+    const fTier = document.getElementById('filterTier').value;
+    const fCallback = document.getElementById('filterCallback').value;
+    const fStatus = document.getElementById('filterStatus').value;
+
+    const filtered = allData.filter(d => {
+        const score = parseInt(d.nps_score) || 0;
+        let tier = 'passive';
+        if (score >= 9) tier = 'promoter';
+        else if (score <= 6) tier = 'detractor';
+
+        const matchesQ = !q || (d.tracking_code && d.tracking_code.toLowerCase().includes(q)) ||
+                              (d.customer_name && d.customer_name.toLowerCase().includes(q)) ||
+                              (d.customer_contact && d.customer_contact.toLowerCase().includes(q)) ||
+                              (d.feedback_text && d.feedback_text.toLowerCase().includes(q));
+        const matchesTier = !fTier || tier === fTier;
+        const matchesCallback = !fCallback || (d.callback_requested || '').includes(fCallback);
+        const matchesStatus = !fStatus || (d.status || 'Kayıt Alındı') === fStatus;
+        return matchesQ && matchesTier && matchesCallback && matchesStatus;
+    });
+
+    // NPS Calculation
+    const total = allData.length;
+    const promoters = allData.filter(x => (parseInt(x.nps_score) || 0) >= 9).length;
+    const detractors = allData.filter(x => (parseInt(x.nps_score) || 0) <= 6).length;
+    let npsScore = 0;
+    if (total > 0) {
+        npsScore = Math.round(((promoters - detractors) / total) * 100);
+    }
+
+    document.getElementById('statTotal').innerText = total;
+    document.getElementById('statPromoters').innerText = `${promoters} (%${total ? Math.round(promoters*100/total) : 0})`;
+    document.getElementById('statDetractors').innerText = `${detractors} (%${total ? Math.round(detractors*100/total) : 0})`;
+    document.getElementById('statNps').innerText = (npsScore > 0 ? '+' : '') + npsScore;
+
+    const tbody = document.getElementById('tableBody');
+    if (filtered.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="9" style="text-align: center; padding: 24px; color: #64748b;">Kayıt bulunamadı.</td></tr>';
+        return;
+    }
+
+    tbody.innerHTML = filtered.map((d, i) => {
+        const score = parseInt(d.nps_score) || 0;
+        let badgeClass = 'badge-passive';
+        let tierLabel = 'Pasif (7-8)';
+        if (score >= 9) { badgeClass = 'badge-promoter'; tierLabel = 'Tavsiye Eden (9-10)'; }
+        if (score <= 6) { badgeClass = 'badge-detractor'; tierLabel = 'Kötüleyen (0-6)'; }
+
+        const wantsCall = (d.callback_requested || '').includes('Evet');
+
+        return `
+            <tr>
+                <td><b>${d.tracking_code || 'NPS-'+i}</b></td>
+                <td><b>${escapeHtml(d.customer_name || 'Anonim')}</b><br><small style="color:var(--text-muted)">${escapeHtml(d.customer_contact || '')}</small></td>
+                <td><b style="font-size:1.15rem; color:${score>=9?'#15803d':(score<=6?'#dc2626':'#b45309')}">${score} / 10</b></td>
+                <td><span class="badge ${badgeClass}">${tierLabel}</span></td>
+                <td><small>${escapeHtml(d.feedback_text || '').slice(0, 45)}...</small></td>
+                <td>${wantsCall ? '<span style="color:#dc2626; font-weight:700;">📞 Evet</span>' : '<span style="color:#64748b;">Hayır</span>'}</td>
+                <td>${d.created_at ? new Date(d.created_at).toLocaleDateString('tr-TR') : '-'}</td>
+                <td><small style="font-weight:600;">${escapeHtml(d.status || 'Kayıt Alındı')}</small></td>
+                <td>
+                    <button class="btn" style="padding: 4px 8px; font-size: 0.8rem;" onclick="viewDetail(${i})">Detay</button>
+                </td>
+            </tr>
+        `;
+    }).join('');
+}
+
+function filterData() { render(); }
+
+function viewDetail(idx) {
+    activeItem = allData[idx];
+    if (!activeItem) return;
+
+    document.getElementById('modalTitle').innerText = `${activeItem.tracking_code} - ${activeItem.customer_name}`;
+    document.getElementById('changeStatusSelect').value = activeItem.status || 'Kayıt Alındı';
+
+    const b = document.getElementById('modalBody');
+    b.innerHTML = `
+        <div class="detail-row"><div class="detail-lbl">NPS Puanı:</div><div class="detail-val"><b style="font-size:1.3rem;">${activeItem.nps_score} / 10</b></div></div>
+        <div class="detail-row"><div class="detail-lbl">Müşteri:</div><div class="detail-val"><b>${escapeHtml(activeItem.customer_name || 'Anonim')}</b></div></div>
+        <div class="detail-row"><div class="detail-lbl">İletişim:</div><div class="detail-val">${escapeHtml(activeItem.customer_contact || 'Belirtilmedi')}</div></div>
+        <div class="detail-row"><div class="detail-lbl">Sipariş / Referans:</div><div class="detail-val">${escapeHtml(activeItem.order_ref || 'Yok')}</div></div>
+        <div class="detail-row"><div class="detail-lbl">Geri Arama Talebi:</div><div class="detail-val"><b>${escapeHtml(activeItem.callback_requested || '')}</b></div></div>
+        <div class="detail-row"><div class="detail-lbl">Puanlar:</div><div class="detail-val">Ürün: ${activeItem.rate_product}/5 | Destek: ${activeItem.rate_support}/5 | Hız: ${activeItem.rate_speed}/5 | Fiyat: ${activeItem.rate_value}/5</div></div>
+        <div style="margin-top: 12px; background: #f8fafc; padding: 14px; border-radius: 6px; border: 1px solid var(--border);">
+            <div style="font-weight: 600; font-size: 0.85rem; margin-bottom: 4px;">Müşteri Görüş / Şikayet Metni:</div>
+            <div style="font-size: 0.9rem; color: #1e293b; white-space: pre-wrap;">${escapeHtml(activeItem.feedback_text || '')}</div>
+        </div>
+    `;
+
+    document.getElementById('detailModal').style.display = 'flex';
+}
+
+function closeModal() { document.getElementById('detailModal').style.display = 'none'; }
+
+async function updateCurrentStatus() {
+    if (!activeItem) return;
+    const newStatus = document.getElementById('changeStatusSelect').value;
+    activeItem.status = newStatus;
+
+    try {
+        await fetch('/api/durum-guncelle', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ tracking_code: activeItem.tracking_code, status: newStatus })
+        });
+    } catch (e) {}
+
+    localStorage.setItem('nps_bildirimler', JSON.stringify(allData));
+    closeModal();
+    render();
+}
+
+function exportCSV() {
+    if (!allData || allData.length === 0) { alert('Dışa aktarılacak NPS verisi bulunamadı.'); return; }
+    let csv = '\uFEFFTakip No,Müşteri,İletişim,NPS Skoru,Ürün,Destek,Hız,Fiyat,Geri Arama,Görüş,Durum,Tarih\n';
+    allData.forEach(d => {
+        csv += `"${d.tracking_code || ''}","${d.customer_name || ''}","${d.customer_contact || ''}","${d.nps_score || 0}","${d.rate_product || 0}","${d.rate_support || 0}","${d.rate_speed || 0}","${d.rate_value || 0}","${d.callback_requested || ''}","${d.feedback_text || ''}","${d.status || 'Kayıt Alındı'}","${d.created_at || ''}"\n`;
+    });
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `nps_musteri_geribildirimleri_${new Date().toISOString().slice(0,10)}.csv`;
+    a.click();
+}
+
+function escapeHtml(s) {
+    return String(s||'').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
+window.onload = fetchData;
+</script>
+
+</body>
+</html>
