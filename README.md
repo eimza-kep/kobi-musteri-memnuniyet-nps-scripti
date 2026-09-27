@@ -79,6 +79,18 @@ python scripts/test_nps.py
 
 ---
 
+## 🌐 KOBİ & E-Dönüşüm Açık Kaynak Ekosistemi
+
+Bu müşteri deneyim aracı, [@eimza-kep](https://github.com/eimza-kep) açık kaynak ekosisteminin KOBİ geri bildirim ve itibar modülüdür. İlgili diğer araçlar:
+
+* 🏢 [kobi-hizli-teklif-scripti](https://github.com/eimza-kep/kobi-hizli-teklif-scripti) - Satış teklifi ve sipariş sonrası müşteri memnuniyet ölçümü.
+* 🔧 [kobi-servis-ariza-takip-scripti](https://github.com/eimza-kep/kobi-servis-ariza-takip-scripti) - Teknik servis ve onarım tamamlandıktan sonra anlık NPS anketi tetikleyici.
+* 🔒 [kurumsal-kvkk-basvuru-scripti](https://github.com/eimza-kep/kurumsal-kvkk-basvuru-scripti) - Müşteri anket verileri ve iletişim izinleri için KVKK uyum portali.
+* 🌟 [awesome-turkiye-e-donusum](https://github.com/eimza-kep/awesome-turkiye-e-donusum) - Türkiye e-Dönüşüm açık kaynak araçları ve kütüphaneleri kürasyonu.
+
+---
+
 ## ⚖️ Lisans
 
 Bu proje [MIT Lisansı](LICENSE) kapsamında açık kaynak olarak sunulmuştur.
+
