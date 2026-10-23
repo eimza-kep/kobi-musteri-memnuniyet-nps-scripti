@@ -1,36 +1,46 @@
-# KOBİ Müşteri Memnuniyeti ve NPS Değerlendirme Portalı
+# KOBİ Müşteri Memnuniyeti, NPS & CX Yönetim Portalı
 
 [![CI Test Suite](https://github.com/eimza-kep/kobi-musteri-memnuniyet-nps-scripti/actions/workflows/ci.yml/badge.svg)](https://github.com/eimza-kep/kobi-musteri-memnuniyet-nps-scripti/actions/workflows/ci.yml)
 [![Canlı Demo](https://img.shields.io/badge/Demo-Canl%C4%B1%20Test%20Et-brightgreen.svg)](https://eimza-kep.github.io/kobi-musteri-memnuniyet-nps-scripti/)
+[![NPS & CSAT](https://img.shields.io/badge/Metrik-NPS%20%26%20CSAT-blueviolet.svg)](#)
+[![QR Kod Davet](https://img.shields.io/badge/Davet-SVG%20QR%20%26%20WhatsApp-success.svg)](#)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Python: 3.8+](https://img.shields.io/badge/Python-3.8%2B-brightgreen.svg)](https://python.org)
 [![PHP: 7.4+](https://img.shields.io/badge/PHP-7.4%2B-purple.svg)](https://php.net)
 [![Docker](https://img.shields.io/badge/Docker-Ready-2496ED.svg)](Dockerfile)
 
-KOBİ'ler, e-ticaret siteleri, B2B hizmet firmaları ve danışmanlık şirketleri için harici bağımlılık gerektirmeyen (zero-dependency), **Net Promoter Score (NPS 0-10)** ve çok kriterli memnuniyet anketi toplayan, **otomatik NPS formülü hesaplayan**, **memnun müşterileri doğrudan Google & Yandex Haritalar yorumuna yönlendiren** ve **kötüleyen müşteriler (0-6 Detractors) için anında WhatsApp/E-Posta/Webhook acil kurtarma alarmı üreten** açık kaynaklı müşteri deneyimi (CX) yazılımı.
+KOBİ'ler, e-ticaret siteleri, B2B hizmet firmaları ve danışmanlık şirketleri için harici bağımlılık gerektirmeyen (zero-dependency), **Net Promoter Score (NPS 0-10)** ve çok kriterli memnuniyet anketi toplayan, **otomatik NPS ve CSAT formülü hesaplayan**, **A4 formatında CX Yönetici Raporu üreten**, **kargo kolisi/fatura için SVG QR kodlu anket daveti çıkaran**, **memnun müşterileri doğrudan Google & Yandex Haritalar yorumuna yönlendiren** ve **kötüleyen müşteriler (0-6 Detractors) için anında WhatsApp/E-Posta acil kurtarma alarmı sunan** açık kaynaklı kurumsal müşteri deneyimi (CX) yazılımı.
 
 ---
 
 ## 🎯 Temel Yetenekler ve Yenilikler
 
-### 1. 🌟 Google Haritalar & Yandex Yorum Yönlendirme Kancası (Review Hook)
-- **Tavsiye Edenler (9-10 Promoters):** Marka elçisi olan mutlu müşteriler, anket tamamlandığında doğrudan işletmenin **Google Haritalar 5 Yıldızlı Yorum Yazma Ekranına** (`https://search.google.com/local/writereview?placeid=...`) veya **Yandex Haritalar** profiline yönlendirilir.
-- KOBİ'nin yerel SEO ve Google Haritalar itibarını organik biçimde katlar.
-- Yönetim panelinden tek tıkla işletme profili URL'leri güncellenebilir.
+### 1. 📑 A4 Yazdırılabilir CX Yönetici Raporu & Komisyon Özeti
+- Şirket genel müdürüne, yönetim kuruluna veya kalite denetçilerine sunulmak üzere tek tıkla A4 formatında **Müşteri Deneyimi (CX) & NPS Performans Yönetici Raporu (HTML & PDF)** üretir.
+- NPS Skoru göstergesi, CSAT (Müşteri Memnuniyeti % oranı), segment dağılım çubuğu, kategori bazlı yıldız dökümleri ve yetkili imza blokları içerir.
 
-### 2. 🚨 Negatif NPS (0-6 Kötüleyenler) İçin Acil Müdahale & WhatsApp Telafi Paketi
+### 2. 📱 Saf Python SVG QR Kodlu Anket Daveti & WhatsApp/SMS Şablonları
+- **Önceden Doldurulmuş Link:** Sipariş no (`order_ref`), müşteri adı ve telefon bilgileriyle kişiselleştirilmiş anket bağlantıları oluşturur (`scripts/nps_invitation_generator.py`).
+- **Kargo / Fatura / Adisyon QR Kodu:** Harici kütüphane gerektirmeyen saf Python vektörel SVG QR kod üretir (`/api/davet-qr-svg`).
+- **Tek Tıkla WhatsApp & SMS:** Müşteriye nazik anket daveti göndermek için hazır şablonlar ve doğrudan `wa.me` yönlendirmesi.
+
+### 3. 🌟 Google Haritalar & Yandex Yorum Yönlendirme Kancası (Review Hook)
+- **Tavsiye Edenler (9-10 Promoters):** Marka elçisi olan mutlu müşteriler, anket tamamlandığında doğrudan işletmenin **Google Haritalar 5 Yıldızlı Yorum Yazma Ekranına** veya **Yandex Haritalar** profiline yönlendirilir.
+- KOBİ'nin yerel SEO ve Google Haritalar itibarını organik biçimde katlar.
+
+### 4. 🚨 Negatif NPS (0-6 Kötüleyenler) İçin Acil Müdahale & WhatsApp Telafi Paketi
 - **Kötüleyenler (0-6 Detractors):** Puan verildiği anda sistem tarafından otomatik olarak **"Acil İnceleme Bekliyor / Churn Riski"** bayrağı konur.
 - **WhatsApp Telafi Mesajı:** Müşteriye özelleştirilmiş, nazik bir özür ve telafi mesajı şablonu üretilir (`wa.me` doğrudan bağlantısı).
 - **Hızlı Arama Butonu:** Yönetim panelinde tek tıkla müşteriyi arama (`tel:...`).
 - **Acil Webhook & Dahili Bildirim:** Şikayet verisi (Müşteri, İletişim, Puan, Şikayet Metni, Sipariş No) şirket içi Slack, Microsoft Teams, CRM veya e-posta kanalına 15 dakika içinde aksiyon alınması için JSON webhook olarak iletilir.
 - **Çözüm Notu Kaydı:** Alınan aksiyonlar ve telafi notları sistemde kalıcı olarak saklanır.
 
-### 3. 📊 NPS Analitik ve Metrik Motoru
+### 5. 📊 NPS & CSAT Analitik ve Metrik Motoru
 - **Canlı NPS Formülü Hesabı:**
   $$\text{NPS} = \left(\frac{\text{Tavsiye Edenler (9-10)} - \text{Kötüleyenler (0-6)}}{\text{Toplam Yanıt}}\right) \times 100$$
-- **Segment Dağılımı:** Promoters (% ve sayı), Passives (% ve sayı), Detractors (% ve sayı).
-- **Kategori Ortalamaları:** Ürün kalitesi, destek hızı, iletişim ve fiyat/değer dengesi için 5 üzerinden puan ortalamaları.
-- **Excel Uyumlu Dışa Aktarım:** UTF-8 BOM destekli Türkçe karakter korumalı tek tıkla CSV çıktısı.
+- **CSAT (Customer Satisfaction Score):** Ürün, destek, süreç hızı ve fiyat/değer kriterlerinde 4 ve 5 yıldız veren müşterilerin yüzdesi.
+- **Dönemsel Trend Analizi:** Aylık/haftalık müşteri memnuniyeti ve sadakat değişimi grafikleri.
+- **Excel Uyumlu Dışa Aktarım:** UTF-8 BOM destekli Türkçe karakter korumalı tek tıkla CSV çıktısı (`/api/export-csv`).
 
 ---
 
@@ -84,7 +94,11 @@ Yönetim Panelinde (`/admin`) yer alan **"⚙️ NPS & Harita Ayarları"** menü
 | :--- | :--- | :--- |
 | `POST` | `/api/nps-gonder` | Müşteri NPS anketini kaydeder, Harita yönlendirme ve acil durum kancasını döner. |
 | `GET` | `/api/nps-listesi` | Tüm anket yanıtlarını listeler. |
-| `GET` | `/api/nps-metrikler` | Toplam yanıt, NPS puanı ve kategori ortalamalarını hesaplar. |
+| `GET` | `/api/nps-metrikler` | Toplam yanıt, NPS puanı, CSAT skoru ve kategori ortalamalarını hesaplar. |
+| `GET` | `/api/nps-yonetici-raporu-html` | A4 formatında yazdırılabilir CX ve NPS Yönetici Raporu döner. |
+| `GET` | `/api/export-csv` | Excel uyumlu UTF-8 BOM formatında CSV dökümünü indirir. |
+| `GET` | `/api/davet-olustur?order_ref=...` | Önceden doldurulmuş anket linki, SMS/WhatsApp şablonları ve QR kod döner. |
+| `GET` | `/api/davet-qr-svg?order_ref=...` | Kargo kolisine veya faturaya basılabilir saf SVG QR kod çıktısı döner. |
 | `GET` | `/api/detractor-alert?tracking_code=...` | Kötüleyen müşteri için WhatsApp, tel linki ve dahili uyarı paketini döner. |
 | `POST` | `/api/durum-guncelle` | İnceleme durumunu ve çözüm notunu günceller. |
 | `GET` | `/api/ayarlar` | Sistem ayarlarını ve harita bağlantılarını getirir. |
@@ -96,19 +110,20 @@ Yönetim Panelinde (`/admin`) yer alan **"⚙️ NPS & Harita Ayarları"** menü
 
 ```
 kobi-musteri-memnuniyet-nps-scripti/
-├── index.html              # Müşteri NPS anket formu ve teşekkür/harita ekranı
-├── admin.html              # Müşteri deneyimi, NPS analitik ve şikayet yönetim paneli
-├── server.py               # SQLite veritabanlı standalone Python HTTP sunucusu
-├── api.php                 # PHP tabanlı REST backend
-├── Dockerfile              # Container dağıtım dosyası
-├── Baslat.bat              # Windows tek tıkla başlatıcı
-├── baslat.sh               # Linux / macOS başlatıcı
+├── index.html                     # Müşteri NPS anket formu ve teşekkür/harita ekranı
+├── admin.html                     # Müşteri deneyimi, NPS analitik ve şikayet yönetim paneli
+├── server.py                      # SQLite veritabanlı standalone Python HTTP sunucusu
+├── api.php                        # PHP tabanlı REST backend
+├── Dockerfile                     # Container dağıtım dosyası
+├── Baslat.bat                     # Windows tek tıkla başlatıcı
+├── baslat.sh                      # Linux / macOS başlatıcı
 ├── scripts/
-│   ├── nps_analytics_engine.py  # NPS hesaplama motoru, churn uyarısı & harita kancası
-│   └── test_nps.py              # Otomatik birim test paketi
+│   ├── nps_analytics_engine.py    # NPS & CSAT hesaplama motoru, churn uyarısı & A4 rapor
+│   ├── nps_invitation_generator.py# Anket davet linki, WhatsApp/SMS metni & SVG QR kod
+│   └── test_nps.py                # Otomatik birim test paketi
 ├── .github/
-│   └── workflows/ci.yml         # GitHub Actions CI testi
-└── README.md                    # Dokümantasyon
+│   └── workflows/ci.yml           # GitHub Actions CI testi
+└── README.md                      # Dokümantasyon
 ```
 
 ---
@@ -121,6 +136,15 @@ Tüm fonksiyonları ve entegrasyonları test etmek için:
 python scripts/test_nps.py
 ```
 
+Çıktı:
+```text
+..............
+----------------------------------------------------------------------
+Ran 14 tests in 0.017s
+
+OK
+```
+
 ---
 
 ## 🌐 KOBİ & E-Dönüşüm Açık Kaynak Ekosistemi
@@ -128,7 +152,7 @@ python scripts/test_nps.py
 Bu müşteri deneyim aracı, [@eimza-kep](https://github.com/eimza-kep) açık kaynak ekosisteminin KOBİ geri bildirim ve itibar modülüdür. İlgili diğer araçlar:
 
 * 🏢 [kobi-hizli-teklif-scripti](https://github.com/eimza-kep/kobi-hizli-teklif-scripti) - Satış teklifi ve sipariş sonrası müşteri memnuniyet ölçümü.
-* 📦 [kobi-tedarikci-teklif-toplama-scripti](https://github.com/eimza-kep/kobi-tedarikci-teklif-toplama-scripti) - Tedarikçi RFQ karşılaştırma ve satınalma sözleşmesi oluşturma.
+* 📦 [kobi-tedarikci-teklif-toplama-scripti](https://github.com/eimza-kep/kobi-tedarikci-teklif-toplama-scripti) - Tedarikçi RFQ karşılaştırma ve UBL-TR 2.1 sipariş oluşturma.
 * 🔧 [kobi-servis-ariza-takip-scripti](https://github.com/eimza-kep/kobi-servis-ariza-takip-scripti) - Teknik servis ve onarım tamamlandıktan sonra anlık NPS anketi tetikleyici.
 * 🔒 [kurumsal-kvkk-basvuru-scripti](https://github.com/eimza-kep/kurumsal-kvkk-basvuru-scripti) - Müşteri anket verileri ve iletişim izinleri için KVKK uyum portali.
 * 🌟 [awesome-turkiye-e-donusum](https://github.com/eimza-kep/awesome-turkiye-e-donusum) - Türkiye e-Dönüşüm açık kaynak araçları ve kütüphaneleri kürasyonu.

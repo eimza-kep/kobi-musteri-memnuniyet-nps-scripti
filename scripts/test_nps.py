@@ -1,3 +1,11 @@
+# -*- coding: utf-8 -*-
+"""
+test_nps.py
+-----------
+KOBİ Müşteri Memnuniyeti (NPS & CSAT), Harita Yönlendirme,
+Yazdırılabilir A4 Yönetici Raporu, CSV İhracı ve QR Davet testleri.
+"""
+
 import unittest
 import os
 import sys
@@ -10,9 +18,18 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import server
 from scripts.nps_analytics_engine import (
     calculate_nps_metrics,
+    calculate_csat_metrics,
+    calculate_nps_trends,
     generate_detractor_alert,
     get_review_redirect_info,
+    generate_nps_executive_report_html,
+    generate_nps_csv_export,
     DEFAULT_SETTINGS
+)
+from scripts.nps_invitation_generator import (
+    generate_survey_link,
+    generate_invitation_templates,
+    generate_survey_qr_svg
 )
 
 class TestNPSSystem(unittest.TestCase):
@@ -128,6 +145,32 @@ class TestNPSSystem(unittest.TestCase):
         self.assertEqual(metrics["nps_score"], 25)
         self.assertAlmostEqual(metrics["avg_product"], 3.75, places=2)
 
+    def test_csat_metrics_calculation(self):
+        sample_feedbacks = [
+            {"rate_product": 5, "rate_support": 5, "rate_speed": 5, "rate_value": 5}, # 4 rating >=4
+            {"rate_product": 4, "rate_support": 4, "rate_speed": 4, "rate_value": 3}, # 3 rating >=4
+            {"rate_product": 2, "rate_support": 2, "rate_speed": 1, "rate_value": 2}, # 0 rating >=4
+        ]
+        # Total ratings: 12. Total >=4: 7. Overall CSAT: 7/12 * 100 = 58.3%
+        csat = calculate_csat_metrics(sample_feedbacks)
+        self.assertEqual(csat["overall_csat"], 58.3)
+        self.assertEqual(csat["product_csat"], 66.7)
+        self.assertEqual(csat["support_csat"], 66.7)
+
+    def test_nps_trends_calculation(self):
+        sample_feedbacks = [
+            {"nps_score": 10, "created_at": "2026-08-15T12:00:00Z"},
+            {"nps_score": 4,  "created_at": "2026-08-20T12:00:00Z"},
+            {"nps_score": 9,  "created_at": "2026-09-01T12:00:00Z"},
+            {"nps_score": 10, "created_at": "2026-09-10T12:00:00Z"}
+        ]
+        trends = calculate_nps_trends(sample_feedbacks)
+        self.assertEqual(len(trends), 2)
+        self.assertEqual(trends[0]["period"], "2026-08")
+        self.assertEqual(trends[0]["nps_score"], 0) # 1 promoter, 1 detractor
+        self.assertEqual(trends[1]["period"], "2026-09")
+        self.assertEqual(trends[1]["nps_score"], 100) # 2 promoters, 0 detractors
+
     def test_detractor_alert_generator(self):
         feedback = {
             "tracking_code": "NPS-TEST-DETRACTOR",
@@ -186,12 +229,70 @@ class TestNPSSystem(unittest.TestCase):
         self.assertEqual(redirect_info["tier"], "passive")
         self.assertFalse(redirect_info["show_review_hook"])
 
+    def test_executive_report_html_and_csv(self):
+        sample_feedbacks = [
+            {
+                "tracking_code": "NPS-TEST-EX1",
+                "customer_name": "Deniz Akın",
+                "customer_contact": "05321112233",
+                "nps_score": 10,
+                "rate_product": 5, "rate_support": 5, "rate_speed": 5, "rate_value": 5,
+                "feedback_text": "Muhteşem bir alışveriş deneyimiydi.",
+                "order_ref": "SIP-1001",
+                "status": "Kayıt Alındı",
+                "created_at": "2026-10-01T10:00:00Z"
+            },
+            {
+                "tracking_code": "NPS-TEST-EX2",
+                "customer_name": "Serkan Öz",
+                "customer_contact": "05332223344",
+                "nps_score": 2,
+                "rate_product": 2, "rate_support": 1, "rate_speed": 1, "rate_value": 2,
+                "feedback_text": "Ürün kırık geldi ve müşteri temsilcisi ilgilenmedi.",
+                "order_ref": "SIP-1002",
+                "status": "Acil İnceleme Bekliyor",
+                "created_at": "2026-10-02T11:00:00Z"
+            }
+        ]
+
+        # A4 Executive HTML Rapor Testi
+        html = generate_nps_executive_report_html(sample_feedbacks, {"company_name": "Örnek Teknoloji A.Ş."})
+        self.assertIn("<!DOCTYPE html>", html)
+        self.assertIn("MÜŞTERİ DENEYİMİ (CX) & NPS PERFORMANS YÖNETİCİ RAPORU", html)
+        self.assertIn("Örnek Teknoloji A.Ş.", html)
+        self.assertIn("Serkan Öz", html)
+        self.assertIn("Acil Müdahale & Churn Riski", html)
+
+        # CSV Rapor Testi
+        csv_text = generate_nps_csv_export(sample_feedbacks)
+        self.assertTrue(csv_text.startswith("\ufeff"), "Excel uyumu için UTF-8 BOM ile başlamalıdır.")
+        self.assertIn("Deniz Akın", csv_text)
+        self.assertIn("Serkan Öz", csv_text)
+        self.assertIn("Promoter", csv_text)
+        self.assertIn("Detractor", csv_text)
+
+    def test_invitation_generator_and_qr(self):
+        link = generate_survey_link("http://localhost:8091", order_ref="SIP-9988", customer_name="Ali Veli", customer_contact="05559998877")
+        self.assertIn("http://localhost:8091/?", link)
+        self.assertIn("order_ref=SIP-9988", link)
+        self.assertIn("name=Ali+Veli", link)
+
+        templates = generate_invitation_templates("Ali Veli", "SIP-9988", link, "ABC A.Ş.")
+        self.assertIn("Ali Veli", templates["whatsapp_text"])
+        self.assertIn("SIP-9988", templates["sms_text"])
+        self.assertIn(link, templates["email_body"])
+
+        qr_svg = generate_survey_qr_svg(link, size=150)
+        self.assertTrue(qr_svg.startswith("<svg"), "QR kodu geçerli bir SVG etiketi ile başlamalıdır.")
+        self.assertIn('width="150"', qr_svg)
+
     def test_files_exist(self):
         base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
         self.assertTrue(os.path.exists(os.path.join(base_dir, "index.html")), "index.html bulunamadı")
         self.assertTrue(os.path.exists(os.path.join(base_dir, "admin.html")), "admin.html bulunamadı")
         self.assertTrue(os.path.exists(os.path.join(base_dir, "server.py")), "server.py bulunamadı")
         self.assertTrue(os.path.exists(os.path.join(base_dir, "scripts", "nps_analytics_engine.py")), "nps_analytics_engine.py bulunamadı")
+        self.assertTrue(os.path.exists(os.path.join(base_dir, "scripts", "nps_invitation_generator.py")), "nps_invitation_generator.py bulunamadı")
 
 if __name__ == "__main__":
     unittest.main()

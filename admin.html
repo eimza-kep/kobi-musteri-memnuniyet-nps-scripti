@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Müşteri Deneyimi ve NPS Yönetim Paneli</title>
+    <title>Müşteri Memnuniyeti, NPS & CX Yönetim Paneli</title>
     <style>
         :root {
             --primary: #8b5cf6;
@@ -16,11 +16,12 @@
         }
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
         body { background: var(--bg); color: var(--text-main); line-height: 1.5; padding: 24px; }
-        .container { max-width: 1200px; margin: 0 auto; }
-        .navbar { display: flex; justify-content: space-between; align-items: center; background: white; padding: 18px 24px; border-radius: 12px; border: 1px solid var(--border); margin-bottom: 24px; box-shadow: 0 1px 3px rgba(0,0,0,0.03); }
+        .container { max-width: 1280px; margin: 0 auto; }
+        .navbar { display: flex; justify-content: space-between; align-items: center; background: white; padding: 18px 24px; border-radius: 12px; border: 1px solid var(--border); margin-bottom: 24px; box-shadow: 0 1px 3px rgba(0,0,0,0.03); flex-wrap: wrap; gap: 12px; }
         .navbar h1 { font-size: 1.3rem; font-weight: 800; color: #0f172a; display: flex; align-items: center; gap: 8px; }
-        .nav-actions { display: flex; gap: 10px; }
-        .btn { padding: 8px 16px; border-radius: 6px; font-size: 0.85rem; font-weight: 600; cursor: pointer; border: 1px solid var(--border); background: white; color: var(--text-main); transition: 0.2s; text-decoration: none; display: inline-flex; align-items: center; gap: 6px; }
+        .nav-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+        .btn { padding: 8px 14px; border-radius: 6px; font-size: 0.85rem; font-weight: 600; cursor: pointer; border: 1px solid var(--border); background: white; color: var(--text-main); transition: 0.2s; text-decoration: none; display: inline-flex; align-items: center; gap: 6px; }
+        .btn:hover { background: #f1f5f9; }
         .btn-primary { background: var(--primary); color: white; border-color: var(--primary); }
         .btn-primary:hover { background: var(--primary-hover); }
 
@@ -35,8 +36,8 @@
 
         .table-container { background: white; border-radius: 10px; border: 1px solid var(--border); overflow-x: auto; box-shadow: 0 1px 3px rgba(0,0,0,0.02); }
         table { width: 100%; border-collapse: collapse; text-align: left; font-size: 0.88rem; }
-        th { background: #f8fafc; padding: 12px 16px; font-weight: 700; color: #475569; border-bottom: 1px solid var(--border); white-space: nowrap; }
-        td { padding: 12px 16px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+        th { background: #f8fafc; padding: 12px 14px; font-weight: 700; color: #475569; border-bottom: 1px solid var(--border); white-space: nowrap; }
+        td { padding: 12px 14px; border-bottom: 1px solid var(--border); vertical-align: middle; }
         tr:hover { background: #f1f5f9; }
 
         .badge { display: inline-block; padding: 4px 10px; border-radius: 999px; font-size: 0.75rem; font-weight: 700; }
@@ -45,22 +46,29 @@
         .badge-detractor { background: #fee2e2; color: #b91c1c; }
 
         .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); align-items: center; justify-content: center; padding: 20px; z-index: 50; }
-        .modal-card { background: white; width: 100%; max-width: 650px; border-radius: 12px; padding: 24px; max-height: 90vh; overflow-y: auto; }
+        .modal-card { background: white; width: 100%; max-width: 720px; border-radius: 12px; padding: 24px; max-height: 90vh; overflow-y: auto; }
         .modal-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); padding-bottom: 12px; margin-bottom: 16px; }
-        .detail-row { display: flex; margin-bottom: 10px; font-size: 0.88rem; }
+        .detail-row { display: flex; margin-bottom: 8px; font-size: 0.88rem; }
         .detail-lbl { width: 160px; font-weight: 600; color: var(--text-muted); }
         .detail-val { flex: 1; color: var(--text-main); }
+        .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px; }
+        .form-group { display: flex; flex-direction: column; gap: 4px; }
+        .form-group.full { grid-column: span 2; }
+        .form-group label { font-size: 0.8rem; font-weight: 600; color: #334155; }
+        .form-group input, .form-group textarea { padding: 8px 10px; border: 1px solid var(--border); border-radius: 6px; font-size: 0.85rem; outline: none; }
     </style>
 </head>
 <body>
 
 <div class="container">
     <div class="navbar">
-        <h1>⭐ Müşteri Deneyimi & NPS Analitik Paneli</h1>
+        <h1>⭐ Müşteri Memnuniyeti, NPS & CX Paneli</h1>
         <div class="nav-actions">
+            <a href="/api/nps-yonetici-raporu-html" target="_blank" class="btn" style="background:#0f172a; color:white;">📑 A4 Yönetici Raporu</a>
+            <button class="btn btn-primary" onclick="openInviteModal()">📱 QR & Anket Daveti</button>
             <a href="/" class="btn" target="_blank">🌐 Anket Formu</a>
             <button class="btn" onclick="openSettingsModal()">⚙️ NPS & Harita Ayarları</button>
-            <button class="btn btn-primary" onclick="exportCSV()">📥 CSV Dışa Aktar</button>
+            <a href="/api/export-csv" class="btn" style="background:#10b981; color:white;">📥 Excel CSV İndir</a>
             <button class="btn" onclick="fetchData()">🔄 Yenile</button>
         </div>
     </div>
@@ -69,6 +77,10 @@
         <div class="stat-card" style="border-left: 4px solid var(--primary);">
             <div class="stat-label">Net Promoter Score (NPS)</div>
             <div class="stat-val" id="statNps" style="color: var(--primary);">0</div>
+        </div>
+        <div class="stat-card" style="border-left: 4px solid #10b981;">
+            <div class="stat-label">Genel Memnuniyet (CSAT)</div>
+            <div class="stat-val" id="statCsat" style="color: #10b981;">%0</div>
         </div>
         <div class="stat-card">
             <div class="stat-label">Toplam Yanıt</div>
@@ -118,7 +130,7 @@
                     <th>Geri Arama?</th>
                     <th>Tarih</th>
                     <th>Durum</th>
-                    <th>İşlem</th>
+                    <th>İşlemler</th>
                 </tr>
             </thead>
             <tbody id="tableBody">
@@ -128,7 +140,7 @@
     </div>
 </div>
 
-<!-- Detail Modal -->
+<!-- Modal 1: Detay ve Çözüm Notu -->
 <div class="modal" id="detailModal">
     <div class="modal-card">
         <div class="modal-header">
@@ -136,76 +148,143 @@
             <button onclick="closeModal()" style="border:none; background:none; font-size: 1.2rem; cursor:pointer;">✖</button>
         </div>
         <div id="modalBody"></div>
-        <div style="margin-top: 14px; background: #f8fafc; padding: 12px; border-radius: 6px; border: 1px solid var(--border);">
-            <label style="font-size: 0.82rem; font-weight: 700; color: #475569; display: block; margin-bottom: 4px;">📝 Müşteri İnceleme & Çözüm Notu:</label>
-            <textarea id="resolutionNoteInput" rows="2" style="width: 100%; padding: 8px; border: 1px solid var(--border); border-radius: 6px; font-size: 0.85rem;" placeholder="Örn: Müşteri arandı, telafi kuponu iletildi veya sorun giderildi..."></textarea>
-        </div>
-        <div style="margin-top: 20px; display: flex; justify-content: space-between; align-items: center; border-top: 1px solid var(--border); padding-top: 14px;">
-            <div style="display: flex; gap: 8px; align-items: center;">
-                <label style="font-size: 0.85rem; font-weight: 600;">Durum:</label>
-                <select id="changeStatusSelect" style="padding: 6px 10px; border-radius: 6px; border: 1px solid var(--border); font-size: 0.85rem;">
-                    <option value="Kayıt Alındı">Kayıt Alındı</option>
-                    <option value="Acil İnceleme Bekliyor">Acil İnceleme Bekliyor</option>
-                    <option value="Müşteri ile Görüşüldü">Müşteri ile Görüşüldü</option>
-                    <option value="Memnuniyet Sağlandı">Memnuniyet Sağlandı</option>
-                </select>
-                <button class="btn btn-primary" onclick="updateCurrentStatus()">Kaydet</button>
+        <div style="margin-top: 16px; border-top: 1px solid var(--border); padding-top: 14px;">
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Durum Güncelle</label>
+                    <select id="changeStatusSelect">
+                        <option value="Kayıt Alındı">Kayıt Alındı</option>
+                        <option value="Acil İnceleme Bekliyor">Acil İnceleme Bekliyor</option>
+                        <option value="Müşteri ile Görüşüldü">Müşteri ile Görüşüldü</option>
+                        <option value="Memnuniyet Sağlandı">Memnuniyet Sağlandı</option>
+                        <option value="Çözümsüz / Kapatıldı">Çözümsüz / Kapatıldı</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Çözüm / Aksiyon Notu</label>
+                    <input type="text" id="resolutionNoteInput" placeholder="Müşteri arandı, telafi kuponu tanımlandı...">
+                </div>
             </div>
-            <button class="btn" onclick="window.print()">🖨️ Yazdır</button>
+            <div style="display:flex; justify-content: flex-end; gap:8px;">
+                <button type="button" class="btn" onclick="closeModal()">Kapat</button>
+                <button type="button" class="btn btn-primary" onclick="updateCurrentStatus()">Kaydet</button>
+            </div>
         </div>
     </div>
 </div>
 
-<!-- Settings Modal -->
+<!-- Modal 2: QR Kod ve Anket Daveti -->
+<div class="modal" id="inviteModal">
+    <div class="modal-card">
+        <div class="modal-header">
+            <h3>📱 QR Kodlu Anket Daveti & Önceden Doldurulmuş Link Üretici</h3>
+            <button onclick="closeInviteModal()" style="border:none; background:none; font-size: 1.2rem; cursor:pointer;">✖</button>
+        </div>
+        <div class="form-row">
+            <div class="form-group">
+                <label>Sipariş / Fatura No</label>
+                <input type="text" id="inv_order_ref" placeholder="SIP-2026-1042">
+            </div>
+            <div class="form-group">
+                <label>Müşteri Adı</label>
+                <input type="text" id="inv_customer_name" placeholder="Ahmet Yılmaz">
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="form-group">
+                <label>Telefon / WhatsApp</label>
+                <input type="text" id="inv_contact" placeholder="05551234567">
+            </div>
+            <div class="form-group" style="justify-content: flex-end;">
+                <button type="button" class="btn btn-primary" style="height:38px;" onclick="generateInviteAction()">⚡ Link ve QR Üret</button>
+            </div>
+        </div>
+
+        <div id="inviteResultArea" style="display:none; margin-top:16px; border-top:1px solid var(--border); padding-top:16px;">
+            <div style="display:flex; gap:18px; align-items:center; background:#f8fafc; padding:16px; border-radius:8px; border:1px solid var(--border); margin-bottom:14px;">
+                <div id="qrCodeContainer" style="background:white; padding:8px; border-radius:8px; border:1px solid #cbd5e1;"></div>
+                <div style="flex:1;">
+                    <div style="font-weight:700; font-size:0.9rem; color:#0f172a; margin-bottom:4px;">Kargo Kolisi, Fatura veya Menüye Basılabilir QR Kod</div>
+                    <div style="font-size:0.8rem; color:#64748b; margin-bottom:8px;">Müşteri kamerasıyla okuttuğunda sipariş bilgileri otomatik dolu olarak ankete ulaşır.</div>
+                    <a id="downloadQrBtn" href="#" target="_blank" class="btn" style="font-size:0.8rem;">📥 SVG Olarak Aç / Yazdır</a>
+                </div>
+            </div>
+
+            <div class="form-group" style="margin-bottom:12px;">
+                <label>Özel Anket Linki</label>
+                <div style="display:flex; gap:6px;">
+                    <input type="text" id="inv_generated_link" readonly style="background:#fff;">
+                    <button class="btn" onclick="copyInviteLink()">📋 Kopyala</button>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>WhatsApp Davet Metni</label>
+                <textarea id="inv_wa_text" style="height:90px; background:#fff; font-size:0.82rem;"></textarea>
+                <div style="display:flex; justify-content:flex-end; gap:8px; margin-top:6px;">
+                    <button class="btn" onclick="copyInviteWaText()">📋 Metni Kopyala</button>
+                    <a id="btnOpenWa" href="#" target="_blank" class="btn btn-primary" style="background:#16a34a; border-color:#16a34a;">💬 WhatsApp ile Gönder</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal 3: Ayarlar -->
 <div class="modal" id="settingsModal">
     <div class="modal-card">
         <div class="modal-header">
-            <h3>⚙️ NPS & Harita Entegrasyon Ayarları</h3>
+            <h3>⚙️ NPS, Harita ve Şikayet Uyarı Ayarları</h3>
             <button onclick="closeSettingsModal()" style="border:none; background:none; font-size: 1.2rem; cursor:pointer;">✖</button>
         </div>
-        <form onsubmit="saveSettings(event)" style="display: flex; flex-direction: column; gap: 12px; font-size: 0.88rem;">
-            <div>
-                <label style="font-weight: 600; display: block; margin-bottom: 4px;">Şirket / Marka Adı:</label>
-                <input type="text" id="cfgCompanyName" style="width: 100%; padding: 8px; border: 1px solid var(--border); border-radius: 6px;" placeholder="Örn: ABC Lojistik A.Ş.">
-            </div>
-            <div>
-                <label style="font-weight: 600; display: block; margin-bottom: 4px;">📍 Google Haritalar Yorum URL (Promoter 9-10 için):</label>
-                <input type="url" id="cfgGoogleMaps" style="width: 100%; padding: 8px; border: 1px solid var(--border); border-radius: 6px;" placeholder="https://search.google.com/local/writereview?placeid=...">
-                <small style="color: var(--text-muted);">9 ve 10 veren memnun müşteriler anket sonrası doğrudan buraya yönlendirilir.</small>
-            </div>
-            <div>
-                <label style="font-weight: 600; display: block; margin-bottom: 4px;">🗺️ Yandex Haritalar URL (Alternatif İnceleme):</label>
-                <input type="url" id="cfgYandexMaps" style="width: 100%; padding: 8px; border: 1px solid var(--border); border-radius: 6px;" placeholder="https://yandex.com.tr/haritalar/org/...">
-            </div>
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
-                <div>
-                    <label style="font-weight: 600; display: block; margin-bottom: 4px;">Detractor (Kötüleyen) Eşik Skoru:</label>
-                    <input type="number" id="cfgDetractorTh" min="0" max="10" value="6" style="width: 100%; padding: 8px; border: 1px solid var(--border); border-radius: 6px;">
-                    <small style="color: var(--text-muted);">Bu puan ve altı acil şikayet uyarısı üretir (Varsayılan: 6).</small>
-                </div>
-                <div>
-                    <label style="font-weight: 600; display: block; margin-bottom: 4px;">Promoter (Tavsiye) Eşik Skoru:</label>
-                    <input type="number" id="cfgPromoterTh" min="0" max="10" value="9" style="width: 100%; padding: 8px; border: 1px solid var(--border); border-radius: 6px;">
-                    <small style="color: var(--text-muted);">Bu puan ve üstü harita yorumuna yönlendirilir (Varsayılan: 9).</small>
+        <form onsubmit="saveSettings(event)">
+            <div class="form-row">
+                <div class="form-group full">
+                    <label>Şirket / Marka Adı</label>
+                    <input type="text" id="cfgCompanyName" required>
                 </div>
             </div>
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
-                <div>
-                    <label style="font-weight: 600; display: block; margin-bottom: 4px;">Acil Bildirim E-Posta:</label>
-                    <input type="email" id="cfgAlertEmail" style="width: 100%; padding: 8px; border: 1px solid var(--border); border-radius: 6px;" placeholder="destek@sirketiniz.com">
-                </div>
-                <div>
-                    <label style="font-weight: 600; display: block; margin-bottom: 4px;">Acil Bildirim Telefon / WhatsApp:</label>
-                    <input type="text" id="cfgAlertPhone" style="width: 100%; padding: 8px; border: 1px solid var(--border); border-radius: 6px;" placeholder="05XXXXXXXXX">
+            <div class="form-row">
+                <div class="form-group full">
+                    <label>Google Haritalar Yorum Bağlantısı</label>
+                    <input type="url" id="cfgGoogleMaps" placeholder="https://search.google.com/local/writereview?placeid=...">
                 </div>
             </div>
-            <div>
-                <label style="font-weight: 600; display: block; margin-bottom: 4px;">🚨 Acil Şikayet Webhook URL (Slack / Teams / CRM):</label>
-                <input type="url" id="cfgWebhookUrl" style="width: 100%; padding: 8px; border: 1px solid var(--border); border-radius: 6px;" placeholder="https://webhook.site/... veya https://hooks.slack.com/...">
+            <div class="form-row">
+                <div class="form-group full">
+                    <label>Yandex Haritalar Profil Bağlantısı</label>
+                    <input type="url" id="cfgYandexMaps" placeholder="https://yandex.com.tr/haritalar/org/...">
+                </div>
             </div>
-            <div style="margin-top: 10px; display: flex; justify-content: flex-end; gap: 8px;">
-                <button type="button" class="btn" onclick="closeSettingsModal()">İptal</button>
-                <button type="submit" class="btn btn-primary">💾 Ayarları Kaydet</button>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Kötüleyenler Eşik Puanı (Risk)</label>
+                    <input type="number" id="cfgDetractorTh" min="0" max="10" value="6">
+                </div>
+                <div class="form-group">
+                    <label>Tavsiye Edenler Eşik Puanı (Promoter)</label>
+                    <input type="number" id="cfgPromoterTh" min="0" max="10" value="9">
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Acil Şikayet E-Postası</label>
+                    <input type="email" id="cfgAlertEmail" placeholder="sikayet@sirketiniz.com">
+                </div>
+                <div class="form-group">
+                    <label>Acil Bildirim WhatsApp No</label>
+                    <input type="text" id="cfgAlertPhone" placeholder="905551234567">
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group full">
+                    <label>Acil Webhook URL (Slack / Teams / CRM)</label>
+                    <input type="url" id="cfgWebhookUrl" placeholder="https://hooks.slack.com/services/...">
+                </div>
+            </div>
+            <div style="display:flex; justify-content: flex-end; gap:8px; margin-top:14px;">
+                <button type="button" class="btn" onclick="closeSettingsModal()">Vazgeç</button>
+                <button type="submit" class="btn btn-primary">Kaydet</button>
             </div>
         </form>
     </div>
@@ -220,11 +299,8 @@ let latestAlertData = null;
 async function fetchData() {
     try {
         const res = await fetch('/api/nps-listesi');
-        if (res.ok) {
-            allData = await res.json();
-        } else {
-            fallbackLocal();
-        }
+        if (res.ok) allData = await res.json();
+        else fallbackLocal();
     } catch (e) {
         fallbackLocal();
     }
@@ -279,7 +355,19 @@ function render() {
         npsScore = Math.round(((promoters - detractors) / total) * 100);
     }
 
+    // CSAT Calculation (4-5 stars across ratings)
+    let csatTotal = total * 4;
+    let csatHigh = 0;
+    allData.forEach(d => {
+        if (parseInt(d.rate_product || 5) >= 4) csatHigh++;
+        if (parseInt(d.rate_support || 5) >= 4) csatHigh++;
+        if (parseInt(d.rate_speed || 5) >= 4) csatHigh++;
+        if (parseInt(d.rate_value || 5) >= 4) csatHigh++;
+    });
+    const csatPct = csatTotal > 0 ? Math.round((csatHigh / csatTotal) * 100) : 0;
+
     document.getElementById('statTotal').innerText = total;
+    document.getElementById('statCsat').innerText = `%${csatPct}`;
     document.getElementById('statPromoters').innerText = `${promoters} (%${total ? Math.round(promoters*100/total) : 0})`;
     document.getElementById('statDetractors').innerText = `${detractors} (%${total ? Math.round(detractors*100/total) : 0})`;
     document.getElementById('statNps').innerText = (npsScore > 0 ? '+' : '') + npsScore;
@@ -479,18 +567,49 @@ async function updateCurrentStatus() {
     render();
 }
 
-function exportCSV() {
-    if (!allData || allData.length === 0) { alert('Dışa aktarılacak NPS verisi bulunamadı.'); return; }
-    let csv = '\uFEFFTakip No,Müşteri,İletişim,NPS Skoru,Ürün,Destek,Hız,Fiyat,Geri Arama,Görüş,Durum,Çözüm Notu,Tarih\n';
-    allData.forEach(d => {
-        csv += `"${d.tracking_code || ''}","${d.customer_name || ''}","${d.customer_contact || ''}","${d.nps_score || 0}","${d.rate_product || 0}","${d.rate_support || 0}","${d.rate_speed || 0}","${d.rate_value || 0}","${d.callback_requested || ''}","${d.feedback_text || ''}","${d.status || 'Kayıt Alındı'}","${d.resolution_note || ''}","${d.created_at || ''}"\n`;
-    });
-    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `nps_musteri_geribildirimleri_${new Date().toISOString().slice(0,10)}.csv`;
-    a.click();
+function openInviteModal() {
+    document.getElementById('inviteModal').style.display = 'flex';
+}
+
+function closeInviteModal() {
+    document.getElementById('inviteModal').style.display = 'none';
+}
+
+async function generateInviteAction() {
+    const orderRef = document.getElementById('inv_order_ref').value.trim();
+    const customerName = document.getElementById('inv_customer_name').value.trim();
+    const contact = document.getElementById('inv_contact').value.trim();
+
+    try {
+        const res = await fetch(`/api/davet-olustur?order_ref=${encodeURIComponent(orderRef)}&customer_name=${encodeURIComponent(customerName)}&contact=${encodeURIComponent(contact)}`);
+        if (res.ok) {
+            const data = await res.json();
+            document.getElementById('inv_generated_link').value = data.survey_url;
+            document.getElementById('inv_wa_text').value = data.templates.whatsapp_text;
+            document.getElementById('qrCodeContainer').innerHTML = data.qr_svg;
+            document.getElementById('downloadQrBtn').href = `/api/davet-qr-svg?order_ref=${encodeURIComponent(orderRef)}&customer_name=${encodeURIComponent(customerName)}`;
+
+            const cleanPhone = contact.replace(/[^0-9]/g, '');
+            const waHref = cleanPhone ? `https://wa.me/${cleanPhone}?text=${encodeURIComponent(data.templates.whatsapp_text)}` : `https://wa.me/?text=${encodeURIComponent(data.templates.whatsapp_text)}`;
+            document.getElementById('btnOpenWa').href = waHref;
+
+            document.getElementById('inviteResultArea').style.display = 'block';
+        }
+    } catch (e) {
+        alert("Davet linki oluşturulurken hata oluştu.");
+    }
+}
+
+function copyInviteLink() {
+    const val = document.getElementById('inv_generated_link').value;
+    navigator.clipboard.writeText(val);
+    alert("✅ Özel anket bağlantısı panoya kopyalandı!");
+}
+
+function copyInviteWaText() {
+    const val = document.getElementById('inv_wa_text').value;
+    navigator.clipboard.writeText(val);
+    alert("✅ WhatsApp davet metni kopyalandı!");
 }
 
 function escapeHtml(s) {

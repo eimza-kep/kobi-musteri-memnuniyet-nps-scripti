@@ -3,7 +3,8 @@
 server.py
 ---------
 KOBİ Müşteri Memnuniyeti (NPS) ve CX Geri Bildirim Sunucusu.
-Google/Yandex Haritalar Yönlendirmesi ve Negatif NPS (0-6) Acil Şikayet Uyarısı.
+Google/Yandex Haritalar Yönlendirmesi, Negatif NPS (0-6) Acil Şikayet Uyarısı,
+A4 Yazdırılabilir CX Yönetici Raporu, Excel CSV İhracı ve SVG QR Davet Motoru.
 """
 
 import http.server
@@ -13,6 +14,7 @@ import sqlite3
 import os
 import sys
 import random
+import datetime
 from urllib.parse import urlparse, parse_qs
 
 ROOT_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -21,9 +23,19 @@ if ROOT_DIR not in sys.path:
 
 from scripts.nps_analytics_engine import (
     calculate_nps_metrics,
+    calculate_csat_metrics,
+    calculate_nps_trends,
     generate_detractor_alert,
     get_review_redirect_info,
+    generate_nps_executive_report_html,
+    generate_nps_csv_export,
     DEFAULT_SETTINGS
+)
+from scripts.nps_invitation_generator import (
+    generate_survey_link,
+    generate_invitation_templates,
+    generate_survey_qr_svg,
+    DEFAULT_BASE_URL
 )
 
 PORT = int(os.environ.get("PORT", 8091))
@@ -117,6 +129,14 @@ class NPSHandler(http.server.SimpleHTTPRequestHandler):
             self.send_json(get_nps_settings())
         elif path == "/api/detractor-alert":
             self.handle_detractor_alert(qs)
+        elif path == "/api/nps-yonetici-raporu-html":
+            self.handle_executive_report_html()
+        elif path == "/api/export-csv":
+            self.handle_export_csv()
+        elif path == "/api/davet-olustur":
+            self.handle_generate_invitation(qs)
+        elif path == "/api/davet-qr-svg":
+            self.handle_generate_qr_svg(qs)
         else:
             super().do_GET()
 
@@ -183,6 +203,8 @@ class NPSHandler(http.server.SimpleHTTPRequestHandler):
                 else:
                     status = "Kayıt Alındı"
 
+            created_at = data.get("created_at") or datetime.datetime.now().isoformat()
+
             conn = sqlite3.connect(DB_FILE)
             cur = conn.cursor()
             cur.execute("""
@@ -206,7 +228,7 @@ class NPSHandler(http.server.SimpleHTTPRequestHandler):
                 data.get("callback_requested", ""),
                 data.get("resolution_note", ""),
                 status,
-                data.get("created_at", "")
+                created_at
             ))
             conn.commit()
             conn.close()
@@ -247,7 +269,14 @@ class NPSHandler(http.server.SimpleHTTPRequestHandler):
             detractor_th = int(settings.get("detractor_threshold", 6))
             promoter_th = int(settings.get("promoter_threshold", 9))
             metrics = calculate_nps_metrics(rows, detractor_th, promoter_th)
-            self.send_json({"status": "success", "metrics": metrics})
+            csat = calculate_csat_metrics(rows)
+            trends = calculate_nps_trends(rows)
+            self.send_json({
+                "status": "success",
+                "metrics": metrics,
+                "csat": csat,
+                "trends": trends
+            })
         except Exception as e:
             self.send_json({"status": "error", "message": str(e)}, status=500)
 
@@ -261,6 +290,84 @@ class NPSHandler(http.server.SimpleHTTPRequestHandler):
         settings = get_nps_settings()
         alert_data = generate_detractor_alert(feedback, settings)
         self.send_json(alert_data)
+
+    def handle_executive_report_html(self):
+        try:
+            conn = sqlite3.connect(DB_FILE)
+            conn.row_factory = sqlite3.Row
+            cur = conn.cursor()
+            cur.execute("SELECT * FROM nps_feedbacks ORDER BY id DESC")
+            rows = [dict(r) for r in cur.fetchall()]
+            conn.close()
+
+            settings = get_nps_settings()
+            html = generate_nps_executive_report_html(rows, settings)
+            body = html.encode("utf-8")
+            self.send_response(200)
+            self.send_header("Content-Type", "text/html; charset=utf-8")
+            self.send_header("Content-Length", str(len(body)))
+            self.end_headers()
+            self.wfile.write(body)
+        except Exception as e:
+            self.send_error(500, str(e))
+
+    def handle_export_csv(self):
+        try:
+            conn = sqlite3.connect(DB_FILE)
+            conn.row_factory = sqlite3.Row
+            cur = conn.cursor()
+            cur.execute("SELECT * FROM nps_feedbacks ORDER BY id DESC")
+            rows = [dict(r) for r in cur.fetchall()]
+            conn.close()
+
+            csv_text = generate_nps_csv_export(rows)
+            body = csv_text.encode("utf-8")
+            today_str = datetime.date.today().strftime("%Y%m%d")
+            self.send_response(200)
+            self.send_header("Content-Type", "text/csv; charset=utf-8")
+            self.send_header("Content-Disposition", f'attachment; filename="nps_geribildirimler_{today_str}.csv"')
+            self.send_header("Content-Length", str(len(body)))
+            self.end_headers()
+            self.wfile.write(body)
+        except Exception as e:
+            self.send_error(500, str(e))
+
+    def handle_generate_invitation(self, qs):
+        order_ref = qs.get("order_ref", [""])[0]
+        customer_name = qs.get("customer_name", [""])[0]
+        contact = qs.get("contact", [""])[0]
+        host = self.headers.get("Host") or f"localhost:{PORT}"
+        base_url = f"http://{host}"
+
+        settings = get_nps_settings()
+        company = settings.get("company_name", "KOBİ Şirketimiz")
+
+        survey_url = generate_survey_link(base_url, order_ref, customer_name, contact)
+        templates = generate_invitation_templates(customer_name, order_ref, survey_url, company)
+        qr_svg = generate_survey_qr_svg(survey_url)
+
+        self.send_json({
+            "status": "success",
+            "survey_url": survey_url,
+            "qr_svg": qr_svg,
+            "templates": templates
+        })
+
+    def handle_generate_qr_svg(self, qs):
+        order_ref = qs.get("order_ref", [""])[0]
+        customer_name = qs.get("customer_name", [""])[0]
+        host = self.headers.get("Host") or f"localhost:{PORT}"
+        base_url = f"http://{host}"
+
+        survey_url = generate_survey_link(base_url, order_ref, customer_name)
+        svg_content = generate_survey_qr_svg(survey_url, size=200)
+        body = svg_content.encode("utf-8")
+
+        self.send_response(200)
+        self.send_header("Content-Type", "image/svg+xml; charset=utf-8")
+        self.send_header("Content-Length", str(len(body)))
+        self.end_headers()
+        self.wfile.write(body)
 
     def handle_update_status(self):
         length = int(self.headers.get("Content-Length", 0))
