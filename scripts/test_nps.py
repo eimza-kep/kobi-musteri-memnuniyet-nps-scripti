@@ -3,8 +3,17 @@ import os
 import sys
 import sqlite3
 
+if hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import server
+from scripts.nps_analytics_engine import (
+    calculate_nps_metrics,
+    generate_detractor_alert,
+    get_review_redirect_info,
+    DEFAULT_SETTINGS
+)
 
 class TestNPSSystem(unittest.TestCase):
     def setUp(self):
@@ -21,11 +30,15 @@ class TestNPSSystem(unittest.TestCase):
         self.conn.commit()
         self.conn.close()
 
-    def test_database_table_exists(self):
+    def test_database_tables_exist(self):
         cur = self.conn.cursor()
         cur.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='nps_feedbacks'")
         row = cur.fetchone()
         self.assertIsNotNone(row, "nps_feedbacks tablosu oluşturulmuş olmalıdır.")
+
+        cur.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='settings'")
+        row_settings = cur.fetchone()
+        self.assertIsNotNone(row_settings, "settings tablosu oluşturulmuş olmalıdır.")
 
     def test_feedback_insert_and_retrieve(self):
         cur = self.conn.cursor()
@@ -34,8 +47,8 @@ class TestNPSSystem(unittest.TestCase):
                 tracking_code, nps_score, rate_product, rate_support,
                 rate_speed, rate_value, feedback_text, customer_name,
                 customer_contact, order_ref, callback_requested,
-                status, created_at
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                resolution_note, status, created_at
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """, (
             "NPS-TEST-001",
             10,
@@ -48,6 +61,7 @@ class TestNPSSystem(unittest.TestCase):
             "05553332211",
             "SIP-888",
             "Hayır",
+            "",
             "Kayıt Alındı",
             "2026-09-20T10:00:00Z"
         ))
@@ -59,30 +73,125 @@ class TestNPSSystem(unittest.TestCase):
         self.assertEqual(record["customer_name"], "Eren Çelik")
         self.assertEqual(record["nps_score"], 10)
 
-    def test_feedback_status_update(self):
+    def test_feedback_status_and_resolution_update(self):
         cur = self.conn.cursor()
         cur.execute("""
-            INSERT INTO nps_feedbacks (tracking_code, customer_name, nps_score, status)
-            VALUES (?, ?, ?, ?)
-        """, ("NPS-TEST-002", "Ömer Seyfettin", 4, "Acil İnceleme Bekliyor"))
+            INSERT INTO nps_feedbacks (tracking_code, customer_name, nps_score, status, resolution_note)
+            VALUES (?, ?, ?, ?, ?)
+        """, ("NPS-TEST-002", "Ömer Seyfettin", 4, "Acil İnceleme Bekliyor", ""))
         self.conn.commit()
 
         cur.execute("""
             UPDATE nps_feedbacks
-            SET status = 'Memnuniyet Sağlandı'
+            SET status = 'Memnuniyet Sağlandı', resolution_note = 'Müşteri arandı, telafi kuponu tanımlandı.'
             WHERE tracking_code = 'NPS-TEST-002'
         """)
         self.conn.commit()
 
-        cur.execute("SELECT status FROM nps_feedbacks WHERE tracking_code = 'NPS-TEST-002'")
+        cur.execute("SELECT status, resolution_note FROM nps_feedbacks WHERE tracking_code = 'NPS-TEST-002'")
         row = cur.fetchone()
         self.assertEqual(row["status"], "Memnuniyet Sağlandı")
+        self.assertIn("telafi kuponu", row["resolution_note"])
+
+    def test_settings_save_and_retrieve(self):
+        test_settings = {
+            "company_name": "Test KOBİ A.Ş.",
+            "google_maps_url": "https://maps.google.com/test",
+            "yandex_maps_url": "https://yandex.com.tr/maps/test",
+            "detractor_threshold": 5,
+            "promoter_threshold": 8,
+            "alert_email": "test@kobi.com",
+            "alert_phone": "05001112233",
+            "webhook_url": "https://webhook.site/test"
+        }
+        server.save_nps_settings(test_settings)
+        loaded = server.get_nps_settings()
+        self.assertEqual(loaded["company_name"], "Test KOBİ A.Ş.")
+        self.assertEqual(loaded["google_maps_url"], "https://maps.google.com/test")
+        self.assertEqual(int(loaded["detractor_threshold"]), 5)
+        self.assertEqual(int(loaded["promoter_threshold"]), 8)
+
+    def test_nps_metrics_calculation(self):
+        sample_feedbacks = [
+            {"nps_score": 10, "rate_product": 5, "rate_support": 5, "rate_speed": 5, "rate_value": 5},
+            {"nps_score": 9,  "rate_product": 4, "rate_support": 5, "rate_speed": 4, "rate_value": 4},
+            {"nps_score": 8,  "rate_product": 4, "rate_support": 3, "rate_speed": 4, "rate_value": 3},
+            {"nps_score": 4,  "rate_product": 2, "rate_support": 2, "rate_speed": 1, "rate_value": 2},
+        ]
+        # Total: 4, Promoters (9-10): 2 (50%), Passives (7-8): 1 (25%), Detractors (0-6): 1 (25%)
+        # NPS = 50 - 25 = +25
+        metrics = calculate_nps_metrics(sample_feedbacks, detractor_threshold=6, promoter_threshold=9)
+        self.assertEqual(metrics["total_count"], 4)
+        self.assertEqual(metrics["promoter_count"], 2)
+        self.assertEqual(metrics["passive_count"], 1)
+        self.assertEqual(metrics["detractor_count"], 1)
+        self.assertEqual(metrics["nps_score"], 25)
+        self.assertAlmostEqual(metrics["avg_product"], 3.75, places=2)
+
+    def test_detractor_alert_generator(self):
+        feedback = {
+            "tracking_code": "NPS-TEST-DETRACTOR",
+            "customer_name": "Canan Dağdeviren",
+            "customer_contact": "05441234567",
+            "nps_score": 3,
+            "feedback_text": "Kargom 5 gün gecikti, müşteri hizmetlerine ulaşamadım.",
+            "order_ref": "SIP-9922",
+            "callback_requested": "Evet, acil dönüş bekliyorum"
+        }
+        custom_settings = {
+            "company_name": "Antigravity Lojistik",
+            "alert_email": "sikayet@antigravity.com",
+            "webhook_url": "https://webhook.site/sample"
+        }
+        alert = generate_detractor_alert(feedback, custom_settings)
+
+        self.assertEqual(alert["tracking_code"], "NPS-TEST-DETRACTOR")
+        self.assertEqual(alert["score"], 3)
+        self.assertEqual(alert["tel_link"], "tel:05441234567")
+        self.assertIn("wa.me/05441234567", alert["client_wa_link"])
+        self.assertIn("Antigravity%20Lojistik", alert["client_wa_link"])
+        self.assertIn("ACİL NPS ŞİKAYET UYARISI", alert["internal_alert_msg"])
+        self.assertEqual(alert["webhook_payload"]["event"], "nps_detractor_alert")
+        self.assertTrue(alert["webhook_payload"]["action_required"])
+
+    def test_review_redirect_hook_promoter(self):
+        settings = {
+            "promoter_threshold": 9,
+            "detractor_threshold": 6,
+            "google_maps_url": "https://maps.google.com/review-my-shop",
+            "yandex_maps_url": "https://yandex.com.tr/maps/my-shop"
+        }
+        redirect_info = get_review_redirect_info(10, settings)
+        self.assertEqual(redirect_info["tier"], "promoter")
+        self.assertTrue(redirect_info["show_review_hook"])
+        self.assertEqual(redirect_info["google_maps_url"], "https://maps.google.com/review-my-shop")
+        self.assertEqual(redirect_info["yandex_maps_url"], "https://yandex.com.tr/maps/my-shop")
+
+    def test_review_redirect_hook_detractor(self):
+        settings = {
+            "promoter_threshold": 9,
+            "detractor_threshold": 6
+        }
+        redirect_info = get_review_redirect_info(4, settings)
+        self.assertEqual(redirect_info["tier"], "detractor")
+        self.assertFalse(redirect_info["show_review_hook"])
+        self.assertIn("İyileştirmek İçin Buradayız", redirect_info["title"])
+
+    def test_review_redirect_hook_passive(self):
+        settings = {
+            "promoter_threshold": 9,
+            "detractor_threshold": 6
+        }
+        redirect_info = get_review_redirect_info(8, settings)
+        self.assertEqual(redirect_info["tier"], "passive")
+        self.assertFalse(redirect_info["show_review_hook"])
 
     def test_files_exist(self):
         base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
         self.assertTrue(os.path.exists(os.path.join(base_dir, "index.html")), "index.html bulunamadı")
         self.assertTrue(os.path.exists(os.path.join(base_dir, "admin.html")), "admin.html bulunamadı")
-        self.assertTrue(os.path.exists(os.path.join(base_dir, "api.php")), "api.php bulunamadı")
+        self.assertTrue(os.path.exists(os.path.join(base_dir, "server.py")), "server.py bulunamadı")
+        self.assertTrue(os.path.exists(os.path.join(base_dir, "scripts", "nps_analytics_engine.py")), "nps_analytics_engine.py bulunamadı")
 
 if __name__ == "__main__":
     unittest.main()

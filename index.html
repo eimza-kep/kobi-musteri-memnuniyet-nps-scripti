@@ -209,15 +209,36 @@
 
     <!-- Success Box -->
     <div class="result-box" id="resultBox">
-        <div style="font-size: 3rem; margin-bottom: 12px;">🎉</div>
-        <h2 style="color: var(--secondary);">Geri Bildiriminiz İçin Çok Teşekkür Ederiz!</h2>
-        <p style="color: var(--text-muted); font-size: 0.92rem; margin-top: 6px; max-width: 500px; margin: 0 auto;">
+        <div style="font-size: 3rem; margin-bottom: 12px;" id="resultEmoji">🎉</div>
+        <h2 style="color: var(--secondary);" id="resultTitle">Geri Bildiriminiz İçin Çok Teşekkür Ederiz!</h2>
+        <p style="color: var(--text-muted); font-size: 0.92rem; margin-top: 6px; max-width: 500px; margin: 0 auto;" id="resultDesc">
             Değerlendirmeniz müşteri deneyimi ekibimiz tarafından incelenecek ve talebiniz doğrultusunda aksiyon alınacaktır.
         </p>
         <div style="margin: 20px 0;">
             <span style="font-size: 0.85rem; color: #64748b;">Geri Bildirim Takip Referansı:</span><br>
             <div style="display:inline-block; background:#ede9fe; color:var(--primary); font-size:1.3rem; font-weight:800; padding:6px 18px; border-radius:8px; margin-top:6px;" id="trackingCodeDisplay">NPS-2026-0000</div>
         </div>
+
+        <!-- Promoters Review Hook Card (Google & Yandex Maps) -->
+        <div id="promoterReviewCard" style="display:none; background:#f0fdf4; border:1px solid #bbf7d0; border-radius:10px; padding:20px; margin:20px 0; text-align:center;">
+            <h3 style="color:#15803d; font-size:1.1rem; margin-bottom:8px;" id="reviewHookTitle">🌟 Google & Yandex Haritalarda Bizi Değerlendirin</h3>
+            <p style="color:#166534; font-size:0.9rem; margin-bottom:14px;" id="reviewHookMsg">Memnuniyetiniz bizi çok mutlu etti! 30 saniyenizi ayırarak Haritalar üzerinden 5 yıldızlı bir yorum bırakmak ister misiniz?</p>
+            <div style="display:flex; justify-content:center; gap:12px; flex-wrap:wrap;">
+                <a id="btnGoogleReview" href="https://search.google.com/local/writereview" target="_blank" class="btn-submit" style="display:inline-flex; align-items:center; gap:8px; width:auto; padding:10px 18px; font-size:0.9rem; background:#4285F4; text-decoration:none;">
+                    <span>📍 Google Haritalar Yorumu Yaz</span>
+                </a>
+                <a id="btnYandexReview" href="https://yandex.com.tr/haritalar" target="_blank" class="btn-submit" style="display:inline-flex; align-items:center; gap:8px; width:auto; padding:10px 18px; font-size:0.9rem; background:#fc3f1d; text-decoration:none;">
+                    <span>🗺️ Yandex Haritalar Yorumu Yaz</span>
+                </a>
+            </div>
+        </div>
+
+        <!-- Detractor Empathy & Immediate Escalation Card -->
+        <div id="detractorApologyCard" style="display:none; background:#fef2f2; border:1px solid #fecaca; border-radius:10px; padding:20px; margin:20px 0; text-align:center;">
+            <h3 style="color:#b91c1c; font-size:1.1rem; margin-bottom:8px;">🙏 Özür Dileriz, Deneyiminizi İyileştireceğiz</h3>
+            <p style="color:#991b1b; font-size:0.9rem; margin-bottom:14px;" id="detractorMsg">Beklentilerinizi karşılayamadığımız için üzgünüz. Geri bildiriminiz Genel Müdürlük Müşteri İlişkileri ekibimize acil öncelikle aktarılmıştır.</p>
+        </div>
+
         <button class="btn-submit" style="width: auto; padding: 10px 24px; background: #e2e8f0; color: #334155; margin-top: 12px;" onclick="location.reload()">➕ Yeni Yanıt Gönder</button>
     </div>
 </div>
@@ -259,6 +280,7 @@ async function handleNpsSubmit(e) {
     };
 
     let trackingCode = 'NPS-2026-' + Math.floor(1000 + Math.random() * 9000);
+    let redirectInfo = null;
 
     try {
         const res = await fetch('/api/nps-gonder', {
@@ -269,6 +291,7 @@ async function handleNpsSubmit(e) {
         if (res.ok) {
             const data = await res.json();
             if (data.tracking_code) trackingCode = data.tracking_code;
+            if (data.redirect_info) redirectInfo = data.redirect_info;
         }
     } catch (err) {
         const local = JSON.parse(localStorage.getItem('nps_bildirimler') || '[]');
@@ -280,6 +303,30 @@ async function handleNpsSubmit(e) {
     document.getElementById('npsForm').style.display = 'none';
     document.getElementById('resultBox').style.display = 'block';
     document.getElementById('trackingCodeDisplay').innerText = trackingCode;
+
+    // Route based on redirect info or client fallback
+    if (redirectInfo) {
+        if (redirectInfo.show_review_hook) {
+            document.getElementById('promoterReviewCard').style.display = 'block';
+            if (redirectInfo.title) document.getElementById('reviewHookTitle').innerText = redirectInfo.title;
+            if (redirectInfo.message) document.getElementById('reviewHookMsg').innerText = redirectInfo.message;
+            if (redirectInfo.google_maps_url) document.getElementById('btnGoogleReview').href = redirectInfo.google_maps_url;
+            if (redirectInfo.yandex_maps_url) document.getElementById('btnYandexReview').href = redirectInfo.yandex_maps_url;
+        } else if (redirectInfo.tier === 'detractor') {
+            document.getElementById('detractorApologyCard').style.display = 'block';
+            document.getElementById('resultEmoji').innerText = '🤝';
+            document.getElementById('resultTitle').innerText = 'Görüşünüz Öncelikli Olarak İnceleniyor';
+            if (redirectInfo.message) document.getElementById('detractorMsg').innerText = redirectInfo.message;
+        }
+    } else {
+        // Fallback for offline / localStorage mode
+        if (selectedNpsVal >= 9) {
+            document.getElementById('promoterReviewCard').style.display = 'block';
+        } else if (selectedNpsVal <= 6) {
+            document.getElementById('detractorApologyCard').style.display = 'block';
+            document.getElementById('resultEmoji').innerText = '🤝';
+        }
+    }
 }
 </script>
 

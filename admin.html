@@ -59,6 +59,7 @@
         <h1>⭐ Müşteri Deneyimi & NPS Analitik Paneli</h1>
         <div class="nav-actions">
             <a href="/" class="btn" target="_blank">🌐 Anket Formu</a>
+            <button class="btn" onclick="openSettingsModal()">⚙️ NPS & Harita Ayarları</button>
             <button class="btn btn-primary" onclick="exportCSV()">📥 CSV Dışa Aktar</button>
             <button class="btn" onclick="fetchData()">🔄 Yenile</button>
         </div>
@@ -127,7 +128,7 @@
     </div>
 </div>
 
-<!-- Modal -->
+<!-- Detail Modal -->
 <div class="modal" id="detailModal">
     <div class="modal-card">
         <div class="modal-header">
@@ -135,6 +136,10 @@
             <button onclick="closeModal()" style="border:none; background:none; font-size: 1.2rem; cursor:pointer;">✖</button>
         </div>
         <div id="modalBody"></div>
+        <div style="margin-top: 14px; background: #f8fafc; padding: 12px; border-radius: 6px; border: 1px solid var(--border);">
+            <label style="font-size: 0.82rem; font-weight: 700; color: #475569; display: block; margin-bottom: 4px;">📝 Müşteri İnceleme & Çözüm Notu:</label>
+            <textarea id="resolutionNoteInput" rows="2" style="width: 100%; padding: 8px; border: 1px solid var(--border); border-radius: 6px; font-size: 0.85rem;" placeholder="Örn: Müşteri arandı, telafi kuponu iletildi veya sorun giderildi..."></textarea>
+        </div>
         <div style="margin-top: 20px; display: flex; justify-content: space-between; align-items: center; border-top: 1px solid var(--border); padding-top: 14px;">
             <div style="display: flex; gap: 8px; align-items: center;">
                 <label style="font-size: 0.85rem; font-weight: 600;">Durum:</label>
@@ -151,9 +156,66 @@
     </div>
 </div>
 
+<!-- Settings Modal -->
+<div class="modal" id="settingsModal">
+    <div class="modal-card">
+        <div class="modal-header">
+            <h3>⚙️ NPS & Harita Entegrasyon Ayarları</h3>
+            <button onclick="closeSettingsModal()" style="border:none; background:none; font-size: 1.2rem; cursor:pointer;">✖</button>
+        </div>
+        <form onsubmit="saveSettings(event)" style="display: flex; flex-direction: column; gap: 12px; font-size: 0.88rem;">
+            <div>
+                <label style="font-weight: 600; display: block; margin-bottom: 4px;">Şirket / Marka Adı:</label>
+                <input type="text" id="cfgCompanyName" style="width: 100%; padding: 8px; border: 1px solid var(--border); border-radius: 6px;" placeholder="Örn: ABC Lojistik A.Ş.">
+            </div>
+            <div>
+                <label style="font-weight: 600; display: block; margin-bottom: 4px;">📍 Google Haritalar Yorum URL (Promoter 9-10 için):</label>
+                <input type="url" id="cfgGoogleMaps" style="width: 100%; padding: 8px; border: 1px solid var(--border); border-radius: 6px;" placeholder="https://search.google.com/local/writereview?placeid=...">
+                <small style="color: var(--text-muted);">9 ve 10 veren memnun müşteriler anket sonrası doğrudan buraya yönlendirilir.</small>
+            </div>
+            <div>
+                <label style="font-weight: 600; display: block; margin-bottom: 4px;">🗺️ Yandex Haritalar URL (Alternatif İnceleme):</label>
+                <input type="url" id="cfgYandexMaps" style="width: 100%; padding: 8px; border: 1px solid var(--border); border-radius: 6px;" placeholder="https://yandex.com.tr/haritalar/org/...">
+            </div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                <div>
+                    <label style="font-weight: 600; display: block; margin-bottom: 4px;">Detractor (Kötüleyen) Eşik Skoru:</label>
+                    <input type="number" id="cfgDetractorTh" min="0" max="10" value="6" style="width: 100%; padding: 8px; border: 1px solid var(--border); border-radius: 6px;">
+                    <small style="color: var(--text-muted);">Bu puan ve altı acil şikayet uyarısı üretir (Varsayılan: 6).</small>
+                </div>
+                <div>
+                    <label style="font-weight: 600; display: block; margin-bottom: 4px;">Promoter (Tavsiye) Eşik Skoru:</label>
+                    <input type="number" id="cfgPromoterTh" min="0" max="10" value="9" style="width: 100%; padding: 8px; border: 1px solid var(--border); border-radius: 6px;">
+                    <small style="color: var(--text-muted);">Bu puan ve üstü harita yorumuna yönlendirilir (Varsayılan: 9).</small>
+                </div>
+            </div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                <div>
+                    <label style="font-weight: 600; display: block; margin-bottom: 4px;">Acil Bildirim E-Posta:</label>
+                    <input type="email" id="cfgAlertEmail" style="width: 100%; padding: 8px; border: 1px solid var(--border); border-radius: 6px;" placeholder="destek@sirketiniz.com">
+                </div>
+                <div>
+                    <label style="font-weight: 600; display: block; margin-bottom: 4px;">Acil Bildirim Telefon / WhatsApp:</label>
+                    <input type="text" id="cfgAlertPhone" style="width: 100%; padding: 8px; border: 1px solid var(--border); border-radius: 6px;" placeholder="05XXXXXXXXX">
+                </div>
+            </div>
+            <div>
+                <label style="font-weight: 600; display: block; margin-bottom: 4px;">🚨 Acil Şikayet Webhook URL (Slack / Teams / CRM):</label>
+                <input type="url" id="cfgWebhookUrl" style="width: 100%; padding: 8px; border: 1px solid var(--border); border-radius: 6px;" placeholder="https://webhook.site/... veya https://hooks.slack.com/...">
+            </div>
+            <div style="margin-top: 10px; display: flex; justify-content: flex-end; gap: 8px;">
+                <button type="button" class="btn" onclick="closeSettingsModal()">İptal</button>
+                <button type="submit" class="btn btn-primary">💾 Ayarları Kaydet</button>
+            </div>
+        </form>
+    </div>
+</div>
+
 <script>
 let allData = [];
 let activeItem = null;
+let currentSettings = {};
+let latestAlertData = null;
 
 async function fetchData() {
     try {
@@ -166,7 +228,17 @@ async function fetchData() {
     } catch (e) {
         fallbackLocal();
     }
+    await fetchSettings();
     render();
+}
+
+async function fetchSettings() {
+    try {
+        const res = await fetch('/api/ayarlar');
+        if (res.ok) {
+            currentSettings = await res.json();
+        }
+    } catch (e) {}
 }
 
 function fallbackLocal() {
@@ -179,11 +251,14 @@ function render() {
     const fCallback = document.getElementById('filterCallback').value;
     const fStatus = document.getElementById('filterStatus').value;
 
+    const detractorMax = parseInt(currentSettings.detractor_threshold) || 6;
+    const promoterMin = parseInt(currentSettings.promoter_threshold) || 9;
+
     const filtered = allData.filter(d => {
         const score = parseInt(d.nps_score) || 0;
         let tier = 'passive';
-        if (score >= 9) tier = 'promoter';
-        else if (score <= 6) tier = 'detractor';
+        if (score >= promoterMin) tier = 'promoter';
+        else if (score <= detractorMax) tier = 'detractor';
 
         const matchesQ = !q || (d.tracking_code && d.tracking_code.toLowerCase().includes(q)) ||
                               (d.customer_name && d.customer_name.toLowerCase().includes(q)) ||
@@ -197,8 +272,8 @@ function render() {
 
     // NPS Calculation
     const total = allData.length;
-    const promoters = allData.filter(x => (parseInt(x.nps_score) || 0) >= 9).length;
-    const detractors = allData.filter(x => (parseInt(x.nps_score) || 0) <= 6).length;
+    const promoters = allData.filter(x => (parseInt(x.nps_score) || 0) >= promoterMin).length;
+    const detractors = allData.filter(x => (parseInt(x.nps_score) || 0) <= detractorMax).length;
     let npsScore = 0;
     if (total > 0) {
         npsScore = Math.round(((promoters - detractors) / total) * 100);
@@ -219,23 +294,27 @@ function render() {
         const score = parseInt(d.nps_score) || 0;
         let badgeClass = 'badge-passive';
         let tierLabel = 'Pasif (7-8)';
-        if (score >= 9) { badgeClass = 'badge-promoter'; tierLabel = 'Tavsiye Eden (9-10)'; }
-        if (score <= 6) { badgeClass = 'badge-detractor'; tierLabel = 'Kötüleyen (0-6)'; }
+        if (score >= promoterMin) { badgeClass = 'badge-promoter'; tierLabel = `Tavsiye Eden (${promoterMin}-10)`; }
+        if (score <= detractorMax) { badgeClass = 'badge-detractor'; tierLabel = `Kötüleyen (0-${detractorMax})`; }
 
         const wantsCall = (d.callback_requested || '').includes('Evet');
+        const isDetractor = score <= detractorMax;
 
         return `
             <tr>
                 <td><b>${d.tracking_code || 'NPS-'+i}</b></td>
                 <td><b>${escapeHtml(d.customer_name || 'Anonim')}</b><br><small style="color:var(--text-muted)">${escapeHtml(d.customer_contact || '')}</small></td>
-                <td><b style="font-size:1.15rem; color:${score>=9?'#15803d':(score<=6?'#dc2626':'#b45309')}">${score} / 10</b></td>
+                <td><b style="font-size:1.15rem; color:${score>=promoterMin?'#15803d':(isDetractor?'#dc2626':'#b45309')}">${score} / 10</b></td>
                 <td><span class="badge ${badgeClass}">${tierLabel}</span></td>
                 <td><small>${escapeHtml(d.feedback_text || '').slice(0, 45)}...</small></td>
                 <td>${wantsCall ? '<span style="color:#dc2626; font-weight:700;">📞 Evet</span>' : '<span style="color:#64748b;">Hayır</span>'}</td>
                 <td>${d.created_at ? new Date(d.created_at).toLocaleDateString('tr-TR') : '-'}</td>
                 <td><small style="font-weight:600;">${escapeHtml(d.status || 'Kayıt Alındı')}</small></td>
                 <td>
-                    <button class="btn" style="padding: 4px 8px; font-size: 0.8rem;" onclick="viewDetail(${i})">Detay</button>
+                    <div style="display:flex; gap:4px; align-items:center;">
+                        <button class="btn" style="padding: 4px 8px; font-size: 0.8rem;" onclick="viewDetail(${i})">Detay</button>
+                        ${isDetractor ? `<button class="btn" style="padding: 4px 6px; font-size: 0.8rem; background:#fee2e2; color:#b91c1c; border-color:#fca5a5;" onclick="quickWhatsAppRecovery(${i})" title="Hızlı WhatsApp Telafi Mesajı">💬</button>` : ''}
+                    </div>
                 </td>
             </tr>
         `;
@@ -244,15 +323,52 @@ function render() {
 
 function filterData() { render(); }
 
-function viewDetail(idx) {
+async function viewDetail(idx) {
     activeItem = allData[idx];
     if (!activeItem) return;
 
     document.getElementById('modalTitle').innerText = `${activeItem.tracking_code} - ${activeItem.customer_name}`;
     document.getElementById('changeStatusSelect').value = activeItem.status || 'Kayıt Alındı';
+    document.getElementById('resolutionNoteInput').value = activeItem.resolution_note || '';
+
+    const score = parseInt(activeItem.nps_score) || 0;
+    const detractorMax = parseInt(currentSettings.detractor_threshold) || 6;
+    let detractorBoxHtml = '';
+
+    if (score <= detractorMax) {
+        let alertData = null;
+        try {
+            const res = await fetch(`/api/detractor-alert?tracking_code=${encodeURIComponent(activeItem.tracking_code)}`);
+            if (res.ok) {
+                alertData = await res.json();
+                latestAlertData = alertData;
+            }
+        } catch (e) {}
+
+        const cleanPhone = (activeItem.customer_contact || '').replace(/[^0-9]/g, '');
+        const telHref = cleanPhone ? `tel:${cleanPhone}` : '#';
+        const waHref = alertData ? alertData.client_wa_link : (cleanPhone ? `https://wa.me/${cleanPhone}` : '#');
+
+        detractorBoxHtml = `
+            <div style="background:#fee2e2; border:1px solid #f87171; border-radius:8px; padding:14px; margin-bottom:14px;">
+                <div style="font-weight:700; color:#b91c1c; margin-bottom:4px; display:flex; align-items:center; gap:6px;">
+                    🚨 ACİL DETRACTOR ŞİKAYET MÜDAHALE PAKETİ (${score}/10 Kötüleyen)
+                </div>
+                <div style="font-size:0.83rem; color:#991b1b; margin-bottom:10px;">
+                    Müşteri kaybını önlemek (churn prevention) adına lütfen 15 dakika içinde iletişime geçiniz.
+                </div>
+                <div style="display:flex; gap:8px; flex-wrap:wrap;">
+                    ${cleanPhone ? `<a href="${telHref}" class="btn" style="background:#dc2626; color:white; border:none; text-decoration:none;">📞 Hızlı Arama (${cleanPhone})</a>` : '<span style="font-size:0.8rem; color:#b91c1c;">(Telefon Girilmemiş)</span>'}
+                    ${cleanPhone ? `<a href="${waHref}" target="_blank" class="btn" style="background:#16a34a; color:white; border:none; text-decoration:none;">💬 WhatsApp Telafi Mesajı Aç</a>` : ''}
+                    <button type="button" class="btn" onclick="copyInternalAlert()" style="background:white; color:#1e293b;">📋 Dahili Uyarıyı Kopyala</button>
+                </div>
+            </div>
+        `;
+    }
 
     const b = document.getElementById('modalBody');
     b.innerHTML = `
+        ${detractorBoxHtml}
         <div class="detail-row"><div class="detail-lbl">NPS Puanı:</div><div class="detail-val"><b style="font-size:1.3rem;">${activeItem.nps_score} / 10</b></div></div>
         <div class="detail-row"><div class="detail-lbl">Müşteri:</div><div class="detail-val"><b>${escapeHtml(activeItem.customer_name || 'Anonim')}</b></div></div>
         <div class="detail-row"><div class="detail-lbl">İletişim:</div><div class="detail-val">${escapeHtml(activeItem.customer_contact || 'Belirtilmedi')}</div></div>
@@ -268,18 +384,93 @@ function viewDetail(idx) {
     document.getElementById('detailModal').style.display = 'flex';
 }
 
+function quickWhatsAppRecovery(idx) {
+    const item = allData[idx];
+    if (!item) return;
+    const cleanPhone = (item.customer_contact || '').replace(/[^0-9]/g, '');
+    if (!cleanPhone) {
+        alert('Bu kayıtta müşteri telefon numarası bulunmuyor.');
+        return;
+    }
+    const company = currentSettings.company_name || 'Şirketimiz';
+    const msg = encodeURIComponent(`Sayın ${item.customer_name || 'Müşterimiz'},\n\n${company} olarak memnuniyet anketimizde paylaştığınız görüşünüzü inceledik. Yaşadığınız olumsuzluğu derhal telafi etmek ve çözüm üretmek isteriz. Müşteri İlişkileri Direktörlüğümüz olarak sizinle en uygun zamanınızda görüşebilir miyiz?`);
+    window.open(`https://wa.me/${cleanPhone}?text=${msg}`, '_blank');
+}
+
+function copyInternalAlert() {
+    if (!latestAlertData || !latestAlertData.internal_alert_msg) {
+        alert('Uyarı metni hazır değil.');
+        return;
+    }
+    navigator.clipboard.writeText(latestAlertData.internal_alert_msg).then(() => {
+        alert('Dahili acil şikayet uyarısı panoya kopyalandı! Slack / Teams veya e-posta kanalına yapıştırabilirsiniz.');
+    }).catch(() => {
+        prompt('Dahili uyarı metnini kopyalayınız:', latestAlertData.internal_alert_msg);
+    });
+}
+
 function closeModal() { document.getElementById('detailModal').style.display = 'none'; }
+
+function openSettingsModal() {
+    document.getElementById('cfgCompanyName').value = currentSettings.company_name || '';
+    document.getElementById('cfgGoogleMaps').value = currentSettings.google_maps_url || '';
+    document.getElementById('cfgYandexMaps').value = currentSettings.yandex_maps_url || '';
+    document.getElementById('cfgDetractorTh').value = currentSettings.detractor_threshold || 6;
+    document.getElementById('cfgPromoterTh').value = currentSettings.promoter_threshold || 9;
+    document.getElementById('cfgAlertEmail').value = currentSettings.alert_email || '';
+    document.getElementById('cfgAlertPhone').value = currentSettings.alert_phone || '';
+    document.getElementById('cfgWebhookUrl').value = currentSettings.webhook_url || '';
+    document.getElementById('settingsModal').style.display = 'flex';
+}
+
+function closeSettingsModal() { document.getElementById('settingsModal').style.display = 'none'; }
+
+async function saveSettings(e) {
+    e.preventDefault();
+    const payload = {
+        company_name: document.getElementById('cfgCompanyName').value.trim(),
+        google_maps_url: document.getElementById('cfgGoogleMaps').value.trim(),
+        yandex_maps_url: document.getElementById('cfgYandexMaps').value.trim(),
+        detractor_threshold: parseInt(document.getElementById('cfgDetractorTh').value) || 6,
+        promoter_threshold: parseInt(document.getElementById('cfgPromoterTh').value) || 9,
+        alert_email: document.getElementById('cfgAlertEmail').value.trim(),
+        alert_phone: document.getElementById('cfgAlertPhone').value.trim(),
+        webhook_url: document.getElementById('cfgWebhookUrl').value.trim()
+    };
+
+    try {
+        const res = await fetch('/api/ayarlar', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+        if (res.ok) {
+            currentSettings = payload;
+            alert('NPS ve Harita ayarları başarıyla kaydedildi.');
+            closeSettingsModal();
+            render();
+            return;
+        }
+    } catch (err) {}
+    alert('Ayarlar sunucuya kaydedilemedi.');
+}
 
 async function updateCurrentStatus() {
     if (!activeItem) return;
     const newStatus = document.getElementById('changeStatusSelect').value;
+    const resolutionNote = document.getElementById('resolutionNoteInput').value.trim();
     activeItem.status = newStatus;
+    activeItem.resolution_note = resolutionNote;
 
     try {
         await fetch('/api/durum-guncelle', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ tracking_code: activeItem.tracking_code, status: newStatus })
+            body: JSON.stringify({
+                tracking_code: activeItem.tracking_code,
+                status: newStatus,
+                resolution_note: resolutionNote
+            })
         });
     } catch (e) {}
 
@@ -290,9 +481,9 @@ async function updateCurrentStatus() {
 
 function exportCSV() {
     if (!allData || allData.length === 0) { alert('Dışa aktarılacak NPS verisi bulunamadı.'); return; }
-    let csv = '\uFEFFTakip No,Müşteri,İletişim,NPS Skoru,Ürün,Destek,Hız,Fiyat,Geri Arama,Görüş,Durum,Tarih\n';
+    let csv = '\uFEFFTakip No,Müşteri,İletişim,NPS Skoru,Ürün,Destek,Hız,Fiyat,Geri Arama,Görüş,Durum,Çözüm Notu,Tarih\n';
     allData.forEach(d => {
-        csv += `"${d.tracking_code || ''}","${d.customer_name || ''}","${d.customer_contact || ''}","${d.nps_score || 0}","${d.rate_product || 0}","${d.rate_support || 0}","${d.rate_speed || 0}","${d.rate_value || 0}","${d.callback_requested || ''}","${d.feedback_text || ''}","${d.status || 'Kayıt Alındı'}","${d.created_at || ''}"\n`;
+        csv += `"${d.tracking_code || ''}","${d.customer_name || ''}","${d.customer_contact || ''}","${d.nps_score || 0}","${d.rate_product || 0}","${d.rate_support || 0}","${d.rate_speed || 0}","${d.rate_value || 0}","${d.callback_requested || ''}","${d.feedback_text || ''}","${d.status || 'Kayıt Alındı'}","${d.resolution_note || ''}","${d.created_at || ''}"\n`;
     });
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
